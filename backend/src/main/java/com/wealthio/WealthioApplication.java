@@ -1,4 +1,4 @@
-package org.example.wealthio;
+package com.wealthio;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
