@@ -22,7 +22,7 @@ public class JwtUtil {
 
     private SecretKey getSigningKey() {
         try {
-            // Try to decode as Base64 first (for secrets like LZvaYaR7SwThS3cjwg+2ZNetsCT1FeEdtW9PoS+Nxe4=)
+            // Try to decode as Base64 first when the configured secret is encoded that way
             byte[] decodedKey = Base64.getDecoder().decode(jwtSecret);
             return Keys.hmacShaKeyFor(decodedKey);
         } catch (IllegalArgumentException e) {

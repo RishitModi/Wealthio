@@ -32,6 +32,9 @@ build/
 ### VS Code ###
 .vscode/
 
+# backend
+/.env
+
 # frontend
 /frontend/node_modules/
 /frontend/dist/

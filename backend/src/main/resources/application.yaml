@@ -1,16 +1,19 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
+
   application:
     name: Wealthio
 
   datasource:
-    url: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres
-    username: postgres.vrwcfbppcjmfzllnmweb
-    password: "_-4DpKC-a#ie5Hx"
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
 
     show-sql: true
 
@@ -19,5 +22,5 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
   jwt:
-    secret: LZvaYaR7SwThS3cjwg+2ZNetsCT1FeEdtW9PoS+Nxe4=
-    expiration: 86400000
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION:86400000}
