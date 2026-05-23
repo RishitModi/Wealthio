@@ -31,3 +31,16 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# frontend
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.env
+
+# ml-service
+/ml-service/venv/
+/ml-service/__pycache__/
+/ml-service/*.pkl
+/ml-service/*.csv
+/ml-service/.env
+
