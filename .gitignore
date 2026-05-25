@@ -1,2 +1,23 @@
+# === IntelliJ IDEA / JetBrains ===
 .idea/
+*.iws
+*.iml
+*.ipr
+out/
 
+# === VS Code ===
+.vscode/
+*.code-workspace
+
+# === Gemini / Antigravity ===
+.gemini/
+
+# === OS files ===
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# === Environment ===
+.env
+.env.local
+.env.*.local
