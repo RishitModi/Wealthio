@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import useAuth from "../context/useAuth";
 import { register } from "../api/authApi";
 
 export default function Register() {
@@ -10,8 +10,9 @@ export default function Register() {
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [redirectOnboarding, setRedirectOnboarding] = useState(false);
 
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user && !redirectOnboarding) return <Navigate to="/dashboard" replace />;
 
   const validate = () => {
     const e = {};
@@ -32,11 +33,13 @@ export default function Register() {
     setErrors(v);
     if (Object.keys(v).length) return;
     setLoading(true);
+    setRedirectOnboarding(true);
     try {
       const res = await register(form);
       login(res);
       navigate("/onboarding");
     } catch (err) {
+      setRedirectOnboarding(false);
       setApiError(err.message || "Registration failed.");
     } finally {
       setLoading(false);
