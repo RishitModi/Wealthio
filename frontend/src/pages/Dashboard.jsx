@@ -1,7 +1,43 @@
-import { useAuth } from "../context/AuthContext";
+import useAuth from "../context/useAuth";
+import { useEffect, useState } from "react";
+import { getProfile } from "../api/profileApi";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
+  const [healthStatus, setHealthStatus] = useState({ state: "idle", message: "" });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkHealth = async () => {
+      if (!user?.token) {
+        if (isMounted) {
+          setHealthStatus({ state: "error", message: "Missing auth token." });
+        }
+        return;
+      }
+
+      try {
+        await getProfile(user.token);
+        if (isMounted) {
+          setHealthStatus({ state: "ok", message: "Backend connected." });
+        }
+      } catch (error) {
+        if (isMounted) {
+          setHealthStatus({
+            state: "error",
+            message: error?.message || "Backend check failed.",
+          });
+        }
+      }
+    };
+
+    checkHealth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.token]);
 
   return (
     <div className="min-h-screen bg-background text-on-surface flex flex-col font-body">
@@ -20,6 +56,17 @@ export default function Dashboard() {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+        {healthStatus.state !== "idle" && (
+          <div
+            className={`mb-6 rounded-lg px-4 py-2 text-sm font-semibold ${
+              healthStatus.state === "ok"
+                ? "bg-tertiary-container text-on-tertiary-container"
+                : "bg-error-container text-on-error-container"
+            }`}
+          >
+            {healthStatus.message}
+          </div>
+        )}
         <span className="material-symbols-outlined text-[64px] text-secondary mb-4 opacity-80">monitoring</span>
         <h1 className="font-display-lg text-display-lg text-on-surface mb-2">
           Dashboard coming soon
