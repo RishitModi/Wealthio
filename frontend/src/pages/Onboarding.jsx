@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import useAuth from "../context/useAuth";
 import { saveProfile } from "../api/profileApi";
 import { predictRisk } from "../api/riskApi";
+import { formatNumberWithCommas, getNumericValue, numberToWords } from "../utils/numberUtils";
 
 const RISK_OPTIONS = ["Conservative", "Moderate", "Aggressive", "Very Aggressive"];
 
@@ -20,7 +21,7 @@ export default function Onboarding() {
     monthlyIncome: "",
     monthlySavings: "",
     monthlyExpenses: "",
-    totalSavings: "",
+    lifetimeSavings: "",
     equity_preference: 4,
     fixed_deposit_preference: 4,
     ppf_preference: 4,
@@ -36,12 +37,37 @@ export default function Onboarding() {
   const [recommendationError, setRecommendationError] = useState("");
 
   const setField = (field) => (e) => {
-    // For money inputs, allow only numbers/decimals
     let value = e.target.value;
-    if (['monthlyIncome', 'monthlySavings', 'monthlyExpenses', 'totalSavings'].includes(field)) {
-      value = value.replace(/[^\d.]/g, '');
+
+    // For money inputs, format with commas
+    if (['monthlyIncome', 'monthlySavings', 'monthlyExpenses', 'lifetimeSavings'].includes(field)) {
+      // Get numeric value and format it
+      const numericValue = getNumericValue(value);
+      value = formatNumberWithCommas(numericValue);
     }
-    setForm((p) => ({ ...p, [field]: value }));
+
+    setForm((p) => {
+      const updated = { ...p, [field]: value };
+
+      // Auto-calculate monthly expenses when income or savings change
+      if (field === 'monthlyIncome' || field === 'monthlySavings') {
+        const income = getNumericValue(updated.monthlyIncome);
+        const savings = getNumericValue(updated.monthlySavings);
+
+        if (income && savings) {
+          const incomeNum = Number(income);
+          const savingsNum = Number(savings);
+          const expenses = incomeNum - savingsNum;
+
+          if (expenses >= 0) {
+            updated.monthlyExpenses = formatNumberWithCommas(expenses.toString());
+          }
+        }
+      }
+
+      return updated;
+    });
+
     setErrors((p) => ({ ...p, [field]: undefined }));
     setApiError("");
   };
@@ -61,7 +87,7 @@ export default function Onboarding() {
     if (!form.monthlyIncome) e.monthlyIncome = "Required.";
     if (!form.monthlySavings) e.monthlySavings = "Required.";
     if (!form.monthlyExpenses) e.monthlyExpenses = "Required.";
-    if (!form.totalSavings) e.totalSavings = "Required.";
+    if (!form.lifetimeSavings) e.lifetimeSavings = "Required.";
     return e;
   };
 
@@ -214,15 +240,30 @@ export default function Onboarding() {
               {[
                 { id: "monthlyIncome", label: "Monthly Income" },
                 { id: "monthlySavings", label: "Monthly Savings" },
-                { id: "monthlyExpenses", label: "Monthly Expenses" },
-                { id: "totalSavings", label: "Total Savings" }
+                { id: "monthlyExpenses", label: "Monthly Expenses", readOnly: true },
+                { id: "lifetimeSavings", label: "Lifetime Savings" }
               ].map((field) => (
                 <div key={field.id} className="flex flex-col gap-2">
                   <label className="font-label-sm text-label-sm text-on-surface uppercase pl-1" htmlFor={field.id}>{field.label}</label>
                   <div className="relative premium-focus transition-shadow duration-200 rounded-lg">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface font-body-md font-semibold select-none">₹</span>
-                    <input className="w-full bg-surface border border-outline-variant rounded-lg py-3 pl-8 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors" id={field.id} name={field.id} placeholder="0.00" type="text" value={form[field.id]} onChange={setField(field.id)} />
+                    <input
+                      className={`w-full bg-surface border border-outline-variant rounded-lg py-3 pl-8 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors ${field.readOnly ? 'opacity-75 cursor-not-allowed' : ''}`}
+                      id={field.id}
+                      name={field.id}
+                      placeholder="0.00"
+                      type="text"
+                      value={form[field.id]}
+                      onChange={setField(field.id)}
+                      readOnly={field.readOnly}
+                    />
                   </div>
+                  {/* Display number in words */}
+                  {form[field.id] && (
+                    <p className="text-on-surface-variant text-xs pl-1 italic">
+                      {numberToWords(getNumericValue(form[field.id]))}
+                    </p>
+                  )}
                   {errors[field.id] && <p className="text-error text-xs pl-1">{errors[field.id]}</p>}
                 </div>
               ))}

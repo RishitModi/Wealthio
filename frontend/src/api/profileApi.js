@@ -14,7 +14,13 @@ const riskMap = {
   very_aggressive: "VERY_HIGH",
 };
 
-const toNumber = (value) => (value === "" || value === null || value === undefined ? null : Number(value));
+const toNumber = (value) => {
+  if (value === "" || value === null || value === undefined) return null;
+  // Remove commas before converting to number
+  const cleaned = String(value).replace(/,/g, "");
+  const num = Number(cleaned);
+  return isNaN(num) ? null : num;
+};
 
 export async function saveProfile(form, token) {
   if (!token) {
@@ -35,7 +41,7 @@ export async function saveProfile(form, token) {
     monthlyIncome: toNumber(form.monthlyIncome),
     monthlySavings: toNumber(form.monthlySavings),
     monthlyExpenses: toNumber(form.monthlyExpenses),
-    totalSavings: toNumber(form.totalSavings),
+    lifetimeSavings: toNumber(form.lifetimeSavings),
     riskAppetite,
   };
 

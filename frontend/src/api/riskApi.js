@@ -1,6 +1,6 @@
 import { apiClient, getErrorMessage } from "./httpClient";
 
-const riskApiBaseUrl = import.meta.env.VITE_RISK_API_BASE_URL || "http://localhost:8000";
+const riskApiBaseUrl = import.meta.env.VITE_RISK_API_BASE_URL || "http://localhost:8001";
 
 export async function predictRisk(payload, token) {
   const url = `${riskApiBaseUrl}/risk-profile`;
@@ -18,7 +18,7 @@ export async function predictRisk(payload, token) {
     console.error("Risk API error:", error);
     if (!error.response) {
       throw new Error(
-        "Network error or CORS issue while calling the risk service. Verify http://localhost:8000 is reachable and CORS is enabled.",
+        "Network error or CORS issue while calling the risk service. Verify http://localhost:8001 is reachable and CORS is enabled.",
         { cause: error }
       );
     }
@@ -44,7 +44,7 @@ export async function persistSelection(payload, token) {
     console.error("Persist selection error:", error);
     if (!error.response) {
       throw new Error(
-        "Network error or CORS issue while saving selection. Verify http://localhost:8000 is reachable and CORS is enabled.",
+        "Network error or CORS issue while saving selection. Verify http://localhost:8001 is reachable and CORS is enabled.",
         { cause: error }
       );
     }
