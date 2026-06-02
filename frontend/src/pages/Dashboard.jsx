@@ -1,9 +1,11 @@
 import useAuth from "../context/useAuth";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getProfile } from "../api/profileApi";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [healthStatus, setHealthStatus] = useState({ state: "idle", message: "" });
 
   useEffect(() => {
@@ -74,6 +76,9 @@ export default function Dashboard() {
         <p className="font-body-lg text-body-lg text-on-surface-variant max-w-md">
           Your personalized investment portfolio is being generated. Check back shortly.
         </p>
+        <div className="mt-6">
+          <button onClick={() => navigate('/risk-assessment')} className="px-6 py-3 bg-primary text-on-primary rounded-md">Take Risk Assessment</button>
+        </div>
       </main>
     </div>
   );

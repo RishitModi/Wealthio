@@ -53,6 +53,20 @@ public class FinancialProfileService {
                 .orElseThrow(() -> new ResourceNotFoundException("Financial profile not found for user id: " + userId));
     }
 
+        /**
+         * Update only the risk appetite for a user's financial profile
+         */
+        public FinancialProfile updateRiskAppetite(Long userId, FinancialProfile.RiskAppetite riskAppetite) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        FinancialProfile profile = financialProfileRepository.findByUserId(userId)
+            .orElse(new FinancialProfile(user));
+
+        profile.setRiskAppetite(riskAppetite);
+        return financialProfileRepository.save(profile);
+        }
+
     /**
      * Calculate investable amount
      * Formula: (monthlySavings × 12) × 0.7

@@ -68,7 +68,7 @@ public class FinancialProfile {
 
     // Enums
     public enum RiskAppetite {
-        LOW, MEDIUM, HIGH
+        LOW, MEDIUM, HIGH, VERY_HIGH
     }
 
     public enum InvestmentGoal {

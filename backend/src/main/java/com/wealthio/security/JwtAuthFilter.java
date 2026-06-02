@@ -28,6 +28,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         try {
+            // Skip JWT validation for OPTIONS preflight requests (CORS)
+            if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            // Skip JWT validation for auth endpoints (registration and login)
+            String requestPath = request.getRequestURI();
+            if (requestPath.startsWith("/api/auth/")) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             String authHeader = request.getHeader("Authorization");
             String token = null;
             String username = null;

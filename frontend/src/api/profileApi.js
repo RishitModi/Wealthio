@@ -11,6 +11,7 @@ const riskMap = {
   conservative: "LOW",
   moderate: "MEDIUM",
   aggressive: "HIGH",
+  very_aggressive: "VERY_HIGH",
 };
 
 const toNumber = (value) => (value === "" || value === null || value === undefined ? null : Number(value));
@@ -60,6 +61,23 @@ export async function getProfile(token) {
       headers: {
         Authorization: `Bearer ${token}`,
       },
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error), { cause: error });
+  }
+}
+
+export async function updateRiskAppetite(selectedRisk, token) {
+  if (!token) {
+    throw new Error("Authentication required.");
+  }
+
+  const payload = { selectedRisk };
+
+  try {
+    const response = await apiClient.post('/api/profile/risk', payload, {
+      headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   } catch (error) {

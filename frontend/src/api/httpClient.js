@@ -17,6 +17,15 @@ export function getErrorMessage(error) {
   if (data?.message) {
     return data.message;
   }
-  return error?.message || "Request failed.";
+  if (error?.response?.statusText) {
+    return `${error.response.status} ${error.response.statusText}`;
+  }
+  if (error?.message) {
+    if (error.message === "Network Error") {
+      return "Network error or CORS issue. Make sure the backend is running at http://localhost:8080 and that http://localhost:5174 is allowed in CORS.";
+    }
+    return error.message;
+  }
+  return "Request failed.";
 }
 

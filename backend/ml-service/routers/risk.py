@@ -1,100 +1,77 @@
 """
 routers/risk.py
 ---------------
-Endpoints:
-  POST /api/risk/profile     — classify user as Conservative/Moderate/Aggressive
-  POST /api/risk/portfolio   — get full portfolio allocation for a risk profile
+Expose risk profiling endpoints backed by K-Means clustering.
 """
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field, field_validator
+from schemas.request import RiskProfileRequest
+from schemas.response import RiskProfileResponse
 from models.risk_profiler import predict_risk_profile
-from services.portfolio import generate_portfolio
+from pydantic import BaseModel
+from pathlib import Path
+import json
+from datetime import datetime
 
-router = APIRouter(prefix="/api/risk", tags=["Risk Profiling"])
+ARTIFACTS_DIR = Path(__file__).resolve().parent.parent / "artifacts"
+ARTIFACTS_DIR.mkdir(exist_ok=True)
+SELECTIONS_PATH = ARTIFACTS_DIR / "selected_profiles.json"
 
-
-# ── Request / Response schemas ────────────────────────────────────────────────
-
-class RiskProfileRequest(BaseModel):
-    age:                  int   = Field(..., ge=18, le=80,  description="User age in years")
-    monthly_income:       float = Field(..., gt=0,          description="Gross monthly income (INR)")
-    monthly_expenses:     float = Field(..., ge=0,          description="Total monthly expenses (INR)")
-    savings:              float = Field(..., ge=0,          description="Total existing savings/investments (INR)")
-    goal_horizon_years:   int   = Field(..., ge=1, le=40,   description="Years until investment goal is needed")
-    risk_appetite_score:  int   = Field(..., ge=1, le=5,    description="Self-reported risk appetite: 1=very low … 5=very high")
-
-    @field_validator("monthly_expenses")
-    @classmethod
-    def expenses_below_income(cls, v, info):
-        # soft warning only — expenses can equal income (zero savings)
-        return v
+router = APIRouter(prefix="", tags=["Risk Profiling"])
 
 
-class PortfolioRequest(RiskProfileRequest):
-    include_crypto: bool = Field(True, description="Whether to include crypto in the portfolio")
-
-
-# ── Endpoints ─────────────────────────────────────────────────────────────────
-
-@router.post("/profile")
+@router.post("/risk-profile", response_model=RiskProfileResponse)
 async def profile_risk(req: RiskProfileRequest):
-    """
-    Classify the user's risk profile.
-
-    Returns risk_label (Conservative / Moderate / Aggressive)
-    and confidence probabilities for each class.
-    """
+    """Predict an investor risk profile and return a decision-support recommendation."""
     try:
         result = predict_risk_profile(
             age=req.age,
-            monthly_income=req.monthly_income,
-            monthly_expenses=req.monthly_expenses,
-            savings=req.savings,
-            goal_horizon_years=req.goal_horizon_years,
-            risk_appetite_score=req.risk_appetite_score,
+            investment_duration=req.investment_duration,
+            expected_return=req.expected_return,
+            equity_preference=req.equity_preference,
+            fixed_deposit_preference=req.fixed_deposit_preference,
+            ppf_preference=req.ppf_preference,
+            gold_preference=req.gold_preference,
         )
-        return {"success": True, "data": result}
-    except FileNotFoundError as e:
+        return result
+    except FileNotFoundError as exc:
         raise HTTPException(
             status_code=503,
-            detail=str(e) + " — Run `python training/train_risk_model.py` to train the model.",
+            detail=str(exc) + " — Run `python training/train_kmeans.py` to train the model.",
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.post("/portfolio")
-async def recommend_portfolio(req: PortfolioRequest):
-    """
-    Returns a full portfolio allocation recommendation.
+class RiskSelectionRequest(BaseModel):
+    recommendedRisk: str
+    selectedRisk: str
+    feature_overview: dict | None = None
 
-    Internally calls /profile first, then generates the allocation.
-    """
+
+@router.post("/risk-selection")
+async def save_risk_selection(req: RiskSelectionRequest):
+    """Persist the ML recommended and user-selected risk profiles for auditing."""
+    record = {
+        "recommendedRisk": req.recommendedRisk,
+        "selectedRisk": req.selectedRisk,
+        "feature_overview": req.feature_overview,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    }
+
     try:
-        # Step 1: get risk label
-        risk_result = predict_risk_profile(
-            age=req.age,
-            monthly_income=req.monthly_income,
-            monthly_expenses=req.monthly_expenses,
-            savings=req.savings,
-            goal_horizon_years=req.goal_horizon_years,
-            risk_appetite_score=req.risk_appetite_score,
-        )
-        # Step 2: generate portfolio
-        portfolio = generate_portfolio(
-            risk_label=risk_result["risk_label"],
-            monthly_income=req.monthly_income,
-            monthly_expenses=req.monthly_expenses,
-            include_crypto=req.include_crypto,
-            goal_horizon_years=req.goal_horizon_years,
-        )
-        return {
-            "success": True,
-            "risk_profile": risk_result,
-            "portfolio":    portfolio,
-        }
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=503, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        if SELECTIONS_PATH.exists():
+            with SELECTIONS_PATH.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+        else:
+            data = []
+
+        data.append(record)
+        with SELECTIONS_PATH.open("w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+
+        return {"success": True, "saved": record}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to save selection: {exc}")

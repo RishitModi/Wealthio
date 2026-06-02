@@ -26,10 +26,10 @@ public class User {
     @Column(name = "full_name", length = 100)
     private String fullName;
     
-    @Column(nullable = false, length = 50, columnDefinition = "varchar(50) default 'ROLE_USER'")
+    @Column(nullable = false, length = 50)
     private String role;
 
-    @Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
     @PrePersist

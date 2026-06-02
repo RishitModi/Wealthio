@@ -40,8 +40,16 @@ public class AuthService {
         user.setFullName(request.getFullName());
         user.setRole("ROLE_USER");
 
-        // Save user to database
-        User savedUser = userRepository.save(user);
+        // Save user to database with clearer error logging
+        User savedUser;
+        try {
+            savedUser = userRepository.save(user);
+        } catch (org.springframework.dao.DataAccessException dae) {
+            Throwable root = dae.getRootCause() != null ? dae.getRootCause() : dae;
+            System.err.println("DataAccessException while saving User: " + root.getMessage());
+            root.printStackTrace();
+            throw dae;
+        }
 
         // Generate JWT token
         String token = jwtUtil.generateToken(

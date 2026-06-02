@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../context/useAuth";
 import { saveProfile } from "../api/profileApi";
+import { predictRisk } from "../api/riskApi";
+
+const RISK_OPTIONS = ["Conservative", "Moderate", "Aggressive", "Very Aggressive"];
 
 export default function Onboarding() {
   const { user } = useAuth();
@@ -18,10 +21,19 @@ export default function Onboarding() {
     monthlySavings: "",
     monthlyExpenses: "",
     totalSavings: "",
-    riskAppetite: "moderate", // Default per design
+    equity_preference: 4,
+    fixed_deposit_preference: 4,
+    ppf_preference: 4,
+    gold_preference: 4,
   });
 
   const [errors, setErrors] = useState({});
+  const [recommendedRisk, setRecommendedRisk] = useState("");
+  const [selectedRisk, setSelectedRisk] = useState("");
+  const [predictionExplanation, setPredictionExplanation] = useState("");
+  const [recommendationStage, setRecommendationStage] = useState("idle");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [recommendationError, setRecommendationError] = useState("");
 
   const setField = (field) => (e) => {
     // For money inputs, allow only numbers/decimals
@@ -62,21 +74,56 @@ export default function Onboarding() {
     setStep((s) => Math.min(s + 1, 3));
   };
 
-  const handleBack = () => setStep((s) => Math.max(s - 1, 1));
+  const handleBack = () => {
+    if (step === 3 && recommendationStage !== "idle") {
+      setRecommendationStage("idle");
+    }
+    setStep((s) => Math.max(s - 1, 1));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.riskAppetite) return;
-    
+    setRecommendationError("");
     setLoading(true);
-    setApiError("");
+
     try {
-      await saveProfile(form, user?.token);
-      navigate("/dashboard");
+      const payload = {
+        age: Number(form.age),
+        investment_duration: form.horizon === "" ? "Less than 1 year" : (form.horizon <= 1 ? "Less than 1 year" : form.horizon <= 3 ? "1-3 years" : form.horizon <= 5 ? "3-5 years" : "More than 5 years"),
+        expected_return: "20%-30%",
+        equity_preference: Number(form.equity_preference),
+        fixed_deposit_preference: Number(form.fixed_deposit_preference),
+        ppf_preference: Number(form.ppf_preference),
+        gold_preference: Number(form.gold_preference),
+      };
+
+      const result = await predictRisk(payload, user?.token);
+      setRecommendedRisk(result.risk_label);
+      setSelectedRisk(result.risk_label);
+      setPredictionExplanation(result.explanation || "");
+      setRecommendationStage("recommendation");
     } catch (err) {
-      setApiError(err.message || "Failed to save profile.");
+      setRecommendationError(err.message || "Failed to get recommendation.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConfirmSelection = async (risk) => {
+    setSelectedRisk(risk);
+    setSavingProfile(true);
+    setRecommendationError("");
+    try {
+      const payload = {
+        ...form,
+        riskAppetite: risk.toLowerCase().replace(/\s+/g, "_"),
+      };
+      await saveProfile(payload, user?.token);
+      navigate("/dashboard");
+    } catch (err) {
+      setRecommendationError(err.message || "Failed to save profile.");
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -196,7 +243,7 @@ export default function Onboarding() {
           </div>
         )}
 
-        {step === 3 && (
+        {step === 3 && recommendationStage === "idle" && (
           <div className="w-full max-w-[560px] mx-auto flex flex-col gap-8">
             <header className="flex flex-col gap-2 text-center">
               <div className="flex gap-1 mb-4 justify-center w-full max-w-xs mx-auto">
@@ -204,30 +251,34 @@ export default function Onboarding() {
                 <div className="h-1 flex-1 bg-surface-variant rounded-full opacity-50"></div>
                 <div className="h-1 flex-1 bg-primary rounded-full"></div>
               </div>
-              <h1 className="font-headline-lg text-headline-lg text-on-surface">Risk Appetite</h1>
-              <p className="font-body-md text-body-md text-on-surface-variant">Select the strategy that best aligns with your financial goals.</p>
+              <h1 className="font-headline-lg text-headline-lg text-on-surface">Investment Preferences</h1>
+              <p className="font-body-md text-body-md text-on-surface-variant">Tell us your preferred allocation style so we can recommend the best risk profile.</p>
             </header>
             
-            {apiError && (
-              <div className="bg-error-container text-on-error-container text-sm px-4 py-3 rounded-lg">{apiError}</div>
+            {recommendationError && (
+              <div className="bg-error-container text-on-error-container text-sm px-4 py-3 rounded-lg">{recommendationError}</div>
             )}
 
-            <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 gap-4">
               {[
-                { id: "conservative", icon: "shield", title: "Conservative", desc: "Slow and steady growth with focus on capital preservation." },
-                { id: "moderate", icon: "balance", title: "Moderate", desc: "A balanced approach aiming for growth with managed risk." },
-                { id: "aggressive", icon: "rocket_launch", title: "Aggressive", desc: "High-growth potential with higher exposure to market volatility." }
-              ].map((risk) => (
-                <button key={risk.id} type="button" onClick={() => setForm(p => ({ ...p, riskAppetite: risk.id }))} className={`risk-card w-full flex items-start text-left p-4 rounded-xl border border-outline-variant hover:border-outline cursor-pointer relative overflow-hidden group ${form.riskAppetite === risk.id ? 'selected bg-[rgba(0,0,0,0.04)]' : 'bg-surface-container-low'}`}>
-                  <div className={`icon-container flex-shrink-0 w-12 h-12 rounded-full bg-surface-container border border-outline-variant flex items-center justify-center transition-colors mr-4 ${form.riskAppetite === risk.id ? 'text-primary' : 'text-on-surface-variant'}`}>
-                    <span className="material-symbols-outlined">{risk.icon}</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <h2 className="font-headline-md text-headline-md text-on-surface">{risk.title}</h2>
-                    <p className="font-body-md text-body-md text-on-surface">{risk.desc}</p>
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-                </button>
+                { id: "equity_preference", label: "Equity Preference" },
+                { id: "fixed_deposit_preference", label: "Fixed Deposit Preference" },
+                { id: "ppf_preference", label: "PPF Preference" },
+                { id: "gold_preference", label: "Gold Preference" },
+              ].map((item) => (
+                <div key={item.id} className="flex flex-col gap-2">
+                  <label className="font-label-sm text-label-sm text-on-surface uppercase" htmlFor={item.id}>{item.label}</label>
+                  <input
+                    id={item.id}
+                    type="range"
+                    min="1"
+                    max="7"
+                    value={form[item.id]}
+                    onChange={(e) => setForm((p) => ({ ...p, [item.id]: Number(e.target.value) }))}
+                    className="w-full"
+                  />
+                  <div className="text-body-sm text-on-surface-variant">{form[item.id]}</div>
+                </div>
               ))}
             </div>
 
@@ -237,10 +288,51 @@ export default function Onboarding() {
                 {loading ? (
                   <span className="material-symbols-outlined animate-spin" style={{fontSize: '24px'}}>progress_activity</span>
                 ) : (
-                  <span className="btn-text">Build My Portfolio</span>
+                  <span className="btn-text">Get Recommendation</span>
                 )}
               </button>
             </div>
+          </div>
+        )}
+
+        {step === 3 && recommendationStage !== "idle" && (
+          <div className="w-full max-w-[560px] mx-auto flex flex-col gap-8">
+            <header className="flex flex-col gap-2 text-center">
+              <h1 className="font-headline-lg text-headline-lg text-on-surface">Recommended Risk Profile</h1>
+              <p className="font-body-md text-body-md text-on-surface-variant">Based on your answers, here is the recommended profile from our AI engine.</p>
+            </header>
+
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6">
+              <div className="text-sm text-on-surface-variant">Recommended Risk Profile</div>
+              <div className="font-headline-lg text-headline-lg mt-2">{recommendedRisk}</div>
+              <p className="mt-4 text-body-md text-on-surface-variant">{predictionExplanation}</p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button onClick={() => handleConfirmSelection(recommendedRisk)} className="flex-1 px-6 py-3 bg-primary text-on-primary rounded-md">Accept Recommendation</button>
+              <button onClick={() => setRecommendationStage("choose-profile")} className="flex-1 px-6 py-3 border border-outline-variant rounded-md">Change Profile</button>
+            </div>
+
+            {recommendationStage === "choose-profile" && (
+              <div className="grid grid-cols-1 gap-4 mt-4">
+                {RISK_OPTIONS.map((risk) => (
+                  <button
+                    key={risk}
+                    type="button"
+                    onClick={() => setSelectedRisk(risk)}
+                    className={`w-full text-left p-4 rounded-xl border ${selectedRisk === risk ? 'border-primary bg-primary/10' : 'border-outline-variant bg-surface-container-low'} transition-colors`}
+                  >
+                    <div className="font-headline-sm mb-1">{risk}</div>
+                    <p className="text-body-sm text-on-surface-variant">{risk === 'Very Aggressive' ? 'Highest growth orientation with more portfolio volatility.' : risk === 'Aggressive' ? 'Higher growth potential with increased volatility.' : risk === 'Moderate' ? 'Balanced growth with managed risk.' : 'Preservation-first with conservative positioning.'}</p>
+                  </button>
+                ))}
+                <button onClick={() => handleConfirmSelection(selectedRisk)} className="px-6 py-3 bg-primary text-on-primary rounded-md">Confirm Selected Profile</button>
+              </div>
+            )}
+
+            {savingProfile && (
+              <div className="text-on-surface-variant text-sm mt-4">Saving your profile...</div>
+            )}
           </div>
         )}
       </main>

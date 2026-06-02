@@ -57,5 +57,39 @@ public class FinancialProfileController {
         FinancialProfile profile = financialProfileService.getProfileByUserId(userId);
         return new ResponseEntity<>(profile, HttpStatus.OK);
     }
+
+    /**
+     * Update risk appetite only
+     */
+    @PostMapping("/risk")
+    public ResponseEntity<FinancialProfile> updateRisk(@RequestBody com.wealthio.dto.RiskSelectionDto dto) {
+        Long userId = getCurrentUserId();
+
+        // Map frontend risk labels to enum
+        String selected = dto.getSelectedRisk();
+        FinancialProfile.RiskAppetite appetite;
+        if (selected == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        switch (selected.toLowerCase()) {
+            case "conservative":
+                appetite = FinancialProfile.RiskAppetite.LOW;
+                break;
+            case "moderate":
+                appetite = FinancialProfile.RiskAppetite.MEDIUM;
+                break;
+            case "aggressive":
+                appetite = FinancialProfile.RiskAppetite.HIGH;
+                break;
+            case "very aggressive":
+                appetite = FinancialProfile.RiskAppetite.VERY_HIGH;
+                break;
+            default:
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        FinancialProfile profile = financialProfileService.updateRiskAppetite(userId, appetite);
+        return new ResponseEntity<>(profile, HttpStatus.OK);
+    }
 }
 
