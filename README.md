@@ -237,9 +237,30 @@ npm run preview
 
 ---
 
-## Running All Services Together (Quick Start Checklist)
+## Running All Services Together (Quick Start)
 
-To run the complete application locally:
+### One-Click Start (Recommended)
+
+From the project root, run the unified startup script:
+
+```powershell
+cd D:\PROJECTS\Wealthio
+.\start-all.ps1
+```
+
+This launches all three services in separate, labeled terminal windows:
+
+| Service | URL | Window Title |
+|---|---|---|
+| Spring Boot Backend | `http://localhost:8080` | Wealthio — Spring Boot (8080) |
+| ML Service (FastAPI) | `http://localhost:8001` | Wealthio — ML Service (8001) |
+| Frontend (Vite) | `http://localhost:5173` | Wealthio — Frontend (5173) |
+
+Press **Ctrl+C** in the main window to stop all services at once.
+
+### Manual Start (Alternative)
+
+If you prefer to manage each service individually:
 
 1. **Terminal 1 - Backend (Java)**
    ```powershell
