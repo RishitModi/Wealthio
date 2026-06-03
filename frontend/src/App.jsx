@@ -5,7 +5,6 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
-import RiskAssessment from "./pages/RiskAssessment";
 
 function App() {
   return (
@@ -25,11 +24,6 @@ function App() {
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <Dashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/risk-assessment" element={
-            <ProtectedRoute>
-              <RiskAssessment />
             </ProtectedRoute>
           } />
           

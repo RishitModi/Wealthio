@@ -6,6 +6,7 @@ import { predictRisk } from "../api/riskApi";
 import { formatNumberWithCommas, getNumericValue, numberToWords } from "../utils/numberUtils";
 
 const RISK_OPTIONS = ["Conservative", "Moderate", "Aggressive", "Very Aggressive"];
+const EXPECTED_RETURN_OPTIONS = ["10%-20%", "20%-30%", "30%-40%"];
 
 export default function Onboarding() {
   const { user } = useAuth();
@@ -26,6 +27,7 @@ export default function Onboarding() {
     fixed_deposit_preference: 4,
     ppf_preference: 4,
     gold_preference: 4,
+    expected_return: "20%-30%",
   });
 
   const [errors, setErrors] = useState({});
@@ -116,7 +118,7 @@ export default function Onboarding() {
       const payload = {
         age: Number(form.age),
         investment_duration: form.horizon === "" ? "Less than 1 year" : (form.horizon <= 1 ? "Less than 1 year" : form.horizon <= 3 ? "1-3 years" : form.horizon <= 5 ? "3-5 years" : "More than 5 years"),
-        expected_return: "20%-30%",
+        expected_return: form.expected_return,
         equity_preference: Number(form.equity_preference),
         fixed_deposit_preference: Number(form.fixed_deposit_preference),
         ppf_preference: Number(form.ppf_preference),
@@ -299,6 +301,19 @@ export default function Onboarding() {
             {recommendationError && (
               <div className="bg-error-container text-on-error-container text-sm px-4 py-3 rounded-lg">{recommendationError}</div>
             )}
+
+            <div className="flex flex-col gap-2 mb-2">
+              <label className="font-label-sm text-label-sm text-on-surface uppercase" htmlFor="expected_return">Expected Return</label>
+              <select
+                id="expected_return"
+                className="w-full bg-surface-container border border-outline rounded-md px-4 py-3 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors cursor-pointer"
+                value={form.expected_return}
+                onChange={(e) => setForm((p) => ({ ...p, expected_return: e.target.value }))}
+              >
+                {EXPECTED_RETURN_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+              <p className="font-body-sm text-body-sm text-on-surface-variant">What annual returns do you expect from your investments?</p>
+            </div>
 
             <div className="grid grid-cols-1 gap-4">
               {[

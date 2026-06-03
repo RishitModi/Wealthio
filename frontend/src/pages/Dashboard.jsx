@@ -77,7 +77,7 @@ export default function Dashboard() {
           Your personalized investment portfolio is being generated. Check back shortly.
         </p>
         <div className="mt-6">
-          <button onClick={() => navigate('/risk-assessment')} className="px-6 py-3 bg-primary text-on-primary rounded-md">Take Risk Assessment</button>
+          <button onClick={() => navigate('/onboarding')} className="px-6 py-3 bg-primary text-on-primary rounded-md">Take Risk Assessment</button>
         </div>
       </main>
     </div>

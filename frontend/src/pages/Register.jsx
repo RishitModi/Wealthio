@@ -37,7 +37,7 @@ export default function Register() {
     try {
       const res = await register(form);
       login(res);
-      navigate("/onboarding");
+      navigate("/dashboard");
     } catch (err) {
       setRedirectOnboarding(false);
       setApiError(err.message || "Registration failed.");
