@@ -44,6 +44,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Allow authentication endpoints without token
                         .requestMatchers("/api/auth/**").permitAll()
+                        // Allow Swagger UI and OpenAPI spec without token
+                        .requestMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )
