@@ -171,7 +171,7 @@ public class MLService {
      */
     private RiskProfileResponse createRiskProfileFallback(Exception ex) {
         return RiskProfileResponse.builder()
-                .riskCategory("MEDIUM")  // default to medium risk
+                .riskCategory("MODERATE")  // default to moderate risk
                 .confidenceScore(0.0)
                 .message("FastAPI service is unavailable. Using default risk profile. Error: " + ex.getMessage())
                 .build();

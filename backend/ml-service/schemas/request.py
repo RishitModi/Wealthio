@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -20,4 +24,15 @@ class RiskProfileRequest(BaseModel):
     )
     gold_preference: int = Field(
         ..., ge=1, le=7, description="Gold preference score from dataset"
+    )
+
+    # Optional now — will become required in Step 6 when the MPT optimiser is wired in.
+    # Computed by Java PortfolioService as: monthlySavings * 12 * 0.7
+    investable_amount: Optional[float] = Field(
+        default=None,
+        gt=0,
+        description=(
+            "Total investable amount in currency units (e.g. INR). "
+            "Used to compute investable_amount_for_optimization = investable_amount * (1 - fd_pct/100)."
+        ),
     )

@@ -183,23 +183,37 @@ def load_artifact(path: Path, name: str):
     return joblib.load(path)
 
 
-def load_kmeans() -> KMeans:
-    return load_artifact(MODEL_PATH, "kmeans_model")
-
-
-def load_scaler() -> StandardScaler:
-    return load_artifact(SCALER_PATH, "scaler")
-
-
-def load_label_encoders() -> Dict[str, LabelEncoder]:
-    return load_artifact(LABEL_ENCODERS_PATH, "label_encoders")
-
-
-def load_cluster_mapping() -> Dict[str, Any]:
+# ── Module-level singletons — loaded ONCE at application startup ──────────────
+# Each artifact is read from disk a single time when this module is first
+# imported by FastAPI. All subsequent prediction calls use the in-memory object.
+def _load_cluster_mapping_from_disk() -> Dict[str, Any]:
     if not CLUSTER_MAPPING_PATH.exists():
         raise FileNotFoundError(f"cluster mapping not found at {CLUSTER_MAPPING_PATH}")
     with CLUSTER_MAPPING_PATH.open("r", encoding="utf-8") as handle:
         return json.load(handle)
+
+
+_KMEANS: KMeans = load_artifact(MODEL_PATH, "kmeans_model")
+_SCALER: StandardScaler = load_artifact(SCALER_PATH, "scaler")
+_LABEL_ENCODERS: Dict[str, LabelEncoder] = load_artifact(LABEL_ENCODERS_PATH, "label_encoders")
+_CLUSTER_MAPPING: Dict[str, Any] = _load_cluster_mapping_from_disk()
+
+
+# ── Public accessors (kept for backward-compat with any external callers) ─────
+def load_kmeans() -> KMeans:
+    return _KMEANS
+
+
+def load_scaler() -> StandardScaler:
+    return _SCALER
+
+
+def load_label_encoders() -> Dict[str, LabelEncoder]:
+    return _LABEL_ENCODERS
+
+
+def load_cluster_mapping() -> Dict[str, Any]:
+    return _CLUSTER_MAPPING
 
 
 def prepare_feature_vector(
@@ -214,9 +228,9 @@ def prepare_feature_vector(
     if any(value < 1 or value > 7 for value in [equity_preference, fixed_deposit_preference, ppf_preference, gold_preference]):
         raise ValueError("Preference values must be between 1 and 7.")
 
-    label_encoders = load_label_encoders()
-    duration_encoder = label_encoders["Duration"]
-    expect_encoder = label_encoders["Expect"]
+    # Use the module-level singleton — no disk I/O on this hot path.
+    duration_encoder = _LABEL_ENCODERS["Duration"]
+    expect_encoder = _LABEL_ENCODERS["Expect"]
 
     try:
         duration_encoded = int(duration_encoder.transform([investment_duration])[0])
@@ -256,9 +270,10 @@ def predict_cluster(
     ppf_preference: int,
     gold_preference: int,
 ) -> Dict[str, Any]:
-    kmeans = load_kmeans()
-    scaler = load_scaler()
-    cluster_mapping = load_cluster_mapping()
+    # Use module-level singletons — all three were loaded once at startup.
+    kmeans = _KMEANS
+    scaler = _SCALER
+    cluster_mapping = _CLUSTER_MAPPING
     features = prepare_feature_vector(
         age,
         investment_duration,
@@ -274,8 +289,26 @@ def predict_cluster(
     if mapping is None:
         raise ValueError(f"No mapping found for cluster {cluster_id}")
 
+    # ── Confidence score from KMeans distances ────────────────────────────────
+    # transform() returns squared Euclidean distances to every cluster centre.
+    # A high confidence means the point is much closer to its assigned cluster
+    # than to any other. We compute: 1 - (d_assigned / sum(all_d)), normalised
+    # to [0, 1] so a perfect assignment scores 1.0.
+    distances = kmeans.transform(scaled)[0]           # shape: (n_clusters,)
+    d_assigned = distances[cluster_id]
+    d_sum = distances.sum()
+    if d_sum == 0.0:
+        confidence_score = 1.0
+    else:
+        # Fraction of total distance NOT belonging to the assigned cluster.
+        # When d_assigned << others, this approaches (n_clusters-1)/n_clusters → 1.
+        confidence_score = float(1.0 - d_assigned / d_sum)
+
+    risk_label = mapping["label"]                     # e.g. "Moderate"
+    risk_category = risk_label.upper()                # e.g. "MODERATE"
+
     explanation = _build_explanation(
-        cluster_label=mapping["label"],
+        cluster_label=risk_label,
         investment_duration=investment_duration,
         expected_return=expected_return,
         equity_preference=equity_preference,
@@ -285,8 +318,12 @@ def predict_cluster(
     )
 
     return {
+        # Java-contract fields
+        "risk_category": risk_category,
+        "confidence_score": round(confidence_score, 4),
+        # Frontend-contract fields
         "cluster_id": cluster_id,
-        "risk_label": mapping["label"],
+        "risk_label": risk_label,
         "explanation": explanation,
         "feature_overview": {
             "age": age,
