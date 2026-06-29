@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException
 from schemas.request import RiskProfileRequest
 from schemas.response import RiskProfileResponse
 from models.risk_profiler import predict_risk_profile
+from services.risk_service import get_risk_boundaries, RISKY_ASSETS
 from pydantic import BaseModel
 from pathlib import Path
 import json
@@ -33,7 +34,29 @@ async def profile_risk(req: RiskProfileRequest):
             ppf_preference=req.ppf_preference,
             gold_preference=req.gold_preference,
         )
-        return result
+
+        # ── Enrich with boundary data ─────────────────────────────────────────
+        risk_bounds = get_risk_boundaries(result["risk_category"])
+        fd_allocation: float = risk_bounds["fd"]
+
+        # Boundaries exposed to the response contain only the four risky assets.
+        risky_bounds = {asset: risk_bounds[asset] for asset in RISKY_ASSETS}
+
+        # investable_amount_for_optimization is the slice that goes to risky assets.
+        # None when the caller did not supply investable_amount (optional in Step 5).
+        investable_amount_for_optimization: float | None = None
+        if req.investable_amount is not None:
+            investable_amount_for_optimization = round(
+                req.investable_amount * (1.0 - fd_allocation / 100.0), 2
+            )
+
+        return {
+            **result,
+            "fd_allocation": fd_allocation,
+            "boundaries": risky_bounds,
+            "investable_amount_for_optimization": investable_amount_for_optimization,
+        }
+
     except FileNotFoundError as exc:
         raise HTTPException(
             status_code=503,

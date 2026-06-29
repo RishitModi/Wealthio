@@ -33,5 +33,14 @@ public class FinancialProfileRequest {
 
     @Positive(message = "Total savings must be positive")
     private Double totalSavings;
+
+    /**
+     * Total investable amount in currency units (e.g. INR).
+     * Computed by PortfolioService as: monthlySavings * 12 * 0.7
+     * Forwarded to the Python ML service so it can compute
+     * investable_amount_for_optimization = investableAmount * (1 - fd_pct/100).
+     * Optional here — will become required once the MPT optimiser is active (Step 6).
+     */
+    private Double investableAmount;
 }
 

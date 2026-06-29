@@ -70,7 +70,7 @@ public class PortfolioService {
         log.info("Investable amount for userId={}: {}", userId, investableAmount);
 
         // 4. Build the request the ML service expects and get the risk profile
-        FinancialProfileRequest mlRequest = buildMlRequest(financialProfile);
+        FinancialProfileRequest mlRequest = buildMlRequest(financialProfile, investableAmount);
         RiskProfileResponse riskResponse = mlService.getRiskProfile(mlRequest);
         String riskCategory = riskResponse.getRiskCategory();
         log.info("ML risk profile for userId={}: {}", userId, riskCategory);
@@ -132,8 +132,13 @@ public class PortfolioService {
      * Map FinancialProfile entity fields to the DTO that MLService.getRiskProfile() expects.
      * The ML model's preference scores (equity, FD, PPF, gold) are derived from the user's
      * stored riskAppetite and investmentGoal enums.
+     *
+     * @param fp               the persisted financial profile entity
+     * @param investableAmount the pre-computed investable amount (monthlySavings × 12 × 0.7),
+     *                         forwarded to the Python service so it can derive
+     *                         investable_amount_for_optimization for the MPT optimiser.
      */
-    private FinancialProfileRequest buildMlRequest(FinancialProfile fp) {
+    private FinancialProfileRequest buildMlRequest(FinancialProfile fp, double investableAmount) {
         FinancialProfileRequest req = new FinancialProfileRequest();
         req.setAge(fp.getAge() != null ? fp.getAge() : 30);
         req.setMonthlyIncome(fp.getMonthlyIncome());
@@ -143,6 +148,7 @@ public class PortfolioService {
         req.setInvestmentGoal(fp.getInvestmentGoal());
         req.setInvestmentHorizonYears(fp.getInvestmentHorizonYears());
         req.setTotalSavings(fp.getTotalSavings());
+        req.setInvestableAmount(investableAmount);
         return req;
     }
 
