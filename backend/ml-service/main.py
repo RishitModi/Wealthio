@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import risk, market, forecast
+from routers import risk, market, forecast, portfolio
 
 app = FastAPI(
     title="Wealthio ML Service",
@@ -27,6 +27,7 @@ app.add_middleware(
 app.include_router(risk.router)
 app.include_router(market.router)
 app.include_router(forecast.router)
+app.include_router(portfolio.router)
 
 
 # ── Health check ─────────────────────────────────────────────────────────────
