@@ -1,9 +1,14 @@
 venv/
 __pycache__/
 *.pkl
-*.csv
-!data/Finance_Trends.csv
+*.pyc
 .env
 artifacts/
-*.pyc
 
+# ── data/ folder ──────────────────────────────────────────────────────────────
+# Ignore all CSVs — generated files are not committed; run collect_data.py to regenerate.
+*.csv
+# Keep the training dataset, the collection script, and static reference data committed.
+!data/Finance_Trends.csv
+!data/collect_data.py
+!data/fd_rates.csv
