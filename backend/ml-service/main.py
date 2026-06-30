@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import risk, market
+from routers import risk, market, forecast
 
 app = FastAPI(
     title="Wealthio ML Service",
@@ -26,6 +26,7 @@ app.add_middleware(
 # ── Routers ──────────────────────────────────────────────────────────────────
 app.include_router(risk.router)
 app.include_router(market.router)
+app.include_router(forecast.router)
 
 
 # ── Health check ─────────────────────────────────────────────────────────────
@@ -45,5 +46,4 @@ if __name__ == "__main__":
     from config import get_settings
     settings = get_settings()
     uvicorn.run("main:app", host="0.0.0.0", port=settings.port, reload=True)
-
-
+    
