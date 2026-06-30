@@ -1,0 +1,29 @@
+{
+    "CONSERVATIVE": {
+        "gamma": 20.0,
+        "equity_target_pct": 32.5,
+        "achievable_equity_range": [
+            25.0,
+            40.0
+        ],
+        "saturated": true
+    },
+    "MODERATE": {
+        "gamma": 15.5949,
+        "equity_target_pct": 67.5,
+        "achievable_equity_range": [
+            60.0,
+            75.0
+        ],
+        "saturated": false
+    },
+    "AGGRESSIVE": {
+        "gamma": 7.7011,
+        "equity_target_pct": 85.0,
+        "achievable_equity_range": [
+            80.0,
+            90.0
+        ],
+        "saturated": false
+    }
+}
