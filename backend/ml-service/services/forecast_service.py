@@ -190,13 +190,13 @@ def _synthetic_forecast(df: pd.DataFrame, periods: int = 30) -> dict:
     }
 
 
-def forecast_asset(asset: str, periods: int = 30) -> dict:
+def forecast_asset(asset: str, periods: int = 30, currency: str = "INR") -> dict:
     """
     Attempts Prophet forecast, falls back to linear trend on ANY failure.
     Uses BaseException to catch even SystemExit from Prophet's stan subprocess.
     """
     try:
-        df = load_asset_history(asset)
+        df = load_asset_history(asset, currency=currency)
     except BaseException as e:
         # Can't even load data — return a minimal error
         return {
@@ -216,5 +216,7 @@ def forecast_asset(asset: str, periods: int = 30) -> dict:
         print(f"[forecast_service] Prophet failed for {asset}: {e}. Using linear trend fallback.")
         result = _synthetic_forecast(df, periods=periods)
         result["asset"] = asset.upper()
+        result["currency"] = currency.upper()
+        result["usdinrRate"] = get_latest_usdinr_rate()
         return result
     
