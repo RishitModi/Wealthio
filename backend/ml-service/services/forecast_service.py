@@ -11,20 +11,44 @@ except ImportError:
     _PROPHET_AVAILABLE = False
 
 
-def load_asset_history(asset: str) -> pd.DataFrame:
+def find_file(relative_path: str) -> str:
+    import os
+    if os.path.exists(relative_path):
+        return relative_path
+    alt_path = os.path.join("backend/ml-service", relative_path)
+    if os.path.exists(alt_path):
+        return alt_path
+    return relative_path
+
+
+def get_latest_usdinr_rate() -> float:
+    try:
+        df = pd.read_csv(find_file("data/gold_daily.csv"))
+        return float(df["USDINR"].iloc[-1])
+    except Exception:
+        return 85.386
+
+
+def load_asset_history(asset: str, currency: str = "INR") -> pd.DataFrame:
     if asset == "gold":
-        df = pd.read_csv("data/raw/gold_historical.csv")
+        df = pd.read_csv(find_file("data/gold_daily.csv"))
+        col = "Close_INR" if currency == "INR" else "Close_USD"
+        df = df.rename(columns={"Date": "ds", col: "y"})[["ds", "y"]]
     elif asset == "nifty":
-        df = pd.read_csv("data/raw/nifty50_historical.csv")
+        df = pd.read_csv(find_file("data/raw/nifty50_historical.csv"))
+        df = df.rename(columns={"Price": "Date"})
+        df = df[df["Date"] != "Ticker"]
+        df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+        df["Close"] = pd.to_numeric(df["Close"], errors="coerce")
+        df = df.dropna(subset=["Date", "Close"]).sort_values("Date")
+        df = df.rename(columns={"Date": "ds", "Close": "y"})[["ds", "y"]]
     else:
         raise ValueError(f"Unknown asset: {asset}. Use 'gold' or 'nifty'")
 
-    df = df.rename(columns={"Price": "Date"})
-    df = df[df["Date"] != "Ticker"]
-    df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
-    df["Close"] = pd.to_numeric(df["Close"], errors="coerce")
-    df = df.dropna(subset=["Date", "Close"]).sort_values("Date")
-    return df.rename(columns={"Date": "ds", "Close": "y"})[["ds", "y"]]
+    df["ds"] = pd.to_datetime(df["ds"], errors="coerce")
+    df["y"] = pd.to_numeric(df["y"], errors="coerce")
+    df = df.dropna(subset=["ds", "y"]).sort_values("ds")
+    return df
 
 
 def run_prophet_forecast(df: pd.DataFrame, periods: int = 30) -> dict:
@@ -185,6 +209,8 @@ def forecast_asset(asset: str, periods: int = 30) -> dict:
     try:
         result = run_prophet_forecast(df, periods=periods)
         result["asset"] = asset.upper()
+        result["currency"] = currency.upper()
+        result["usdinrRate"] = get_latest_usdinr_rate()
         return result
     except BaseException as e:
         print(f"[forecast_service] Prophet failed for {asset}: {e}. Using linear trend fallback.")

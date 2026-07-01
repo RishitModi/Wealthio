@@ -1,7 +1,11 @@
 import ForecastChart from "./ForecastChart";
 
-const fmtPrice = (n) =>
-  new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n ?? 0);
+const fmtPrice = (n, currency = "INR") =>
+  new Intl.NumberFormat(currency === "USD" ? "en-US" : "en-IN", {
+    style: "currency",
+    currency: currency,
+    maximumFractionDigits: 0,
+  }).format(n ?? 0);
 
 const SIGNAL_STYLES = {
   BUY:  { badge: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: "trending_up",   dot: "bg-emerald-500" },
@@ -22,6 +26,7 @@ export default function ForecastCard({ data }) {
   }
 
   const s = SIGNAL_STYLES[data.signal] ?? SIGNAL_STYLES.HOLD;
+  const currency = data.currency || "INR";
 
   return (
     <div className="flex-1 min-w-[280px] rounded-2xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm flex flex-col gap-4">
@@ -51,6 +56,7 @@ export default function ForecastCard({ data }) {
           history={data.history}
           forecast={data.forecast}
           signal={data.signal}
+          currency={currency}
         />
       )}
 
@@ -67,7 +73,7 @@ export default function ForecastCard({ data }) {
             className="text-xl font-extrabold text-on-surface"
             style={{ fontFamily: "var(--font-display)" }}
           >
-            ₹{fmtPrice(data.currentPrice)}
+            {fmtPrice(data.currentPrice, currency)}
           </p>
         </div>
         <div>
@@ -81,7 +87,7 @@ export default function ForecastCard({ data }) {
             className="text-xl font-extrabold text-on-surface"
             style={{ fontFamily: "var(--font-display)" }}
           >
-            ₹{fmtPrice(data.predictedPrice)}
+            {fmtPrice(data.predictedPrice, currency)}
           </p>
         </div>
         <div>
@@ -105,7 +111,7 @@ export default function ForecastCard({ data }) {
         className="rounded-xl bg-surface-container px-3 py-2 text-[12px] text-on-surface-variant"
         style={{ fontFamily: "var(--font-mono)" }}
       >
-        30-day range: ₹{fmtPrice(data.predictedLow)} — ₹{fmtPrice(data.predictedHigh)}
+        30-day range: {fmtPrice(data.predictedLow, currency)} — {fmtPrice(data.predictedHigh, currency)}
       </div>
 
       {/* Message */}
