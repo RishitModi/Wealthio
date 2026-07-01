@@ -38,7 +38,7 @@ public class MLService {
 
             RiskProfileResponse response = webClient
                     .post()
-                    .uri("/api/ml/risk-profile")
+                    .uri("/risk-profile")
                     .bodyValue(profile)
                     .retrieve()
                     .bodyToMono(RiskProfileResponse.class)
@@ -66,13 +66,17 @@ public class MLService {
      * @param investableAmount Amount available to invest
      * @return List of AllocationResult containing asset allocation
      */
-    public List<AllocationResult> getPortfolioAllocation(String riskCategory, Double investableAmount) {
+    public List<AllocationResult> getPortfolioAllocation(String riskCategory, Double investableAmount, FinancialProfileRequest profile) {
         try {
             log.info("Calling FastAPI getPortfolioAllocation for risk category: {}, amount: {}", riskCategory, investableAmount);
 
             PortfolioAllocationRequest request = PortfolioAllocationRequest.builder()
                     .riskCategory(riskCategory)
                     .investableAmount(investableAmount)
+                    .age(profile.getAge() != null ? profile.getAge() : 30)
+                    .investmentHorizonYears(profile.getInvestmentHorizonYears() != null ? profile.getInvestmentHorizonYears() : 10)
+                    .monthlyIncome(profile.getMonthlyIncome() != null ? profile.getMonthlyIncome() : 0.0)
+                    .monthlySavings(profile.getMonthlySavings() != null ? profile.getMonthlySavings() : 0.0)
                     .build();
 
             @SuppressWarnings("unchecked")
@@ -81,20 +85,24 @@ public class MLService {
                     .uri("/api/ml/portfolio-allocation")
                     .bodyValue(request)
                     .retrieve()
-                    .bodyToMono(List.class)
+                    .bodyToMono(java.util.Map.class)
                     .timeout(Duration.ofSeconds(TIMEOUT_SECONDS))
-                    .map(list -> {
+                    .map(responseMap -> {
                         List<AllocationResult> results = new ArrayList<>();
-                        for (Object item : list) {
-                            if (item instanceof java.util.Map) {
-                                @SuppressWarnings("unchecked")
-                                java.util.Map<String, Object> map = (java.util.Map<String, Object>) item;
-                                AllocationResult result = AllocationResult.builder()
-                                        .assetClass((String) map.get("assetClass"))
-                                        .percentage(((Number) map.get("percentage")).doubleValue())
-                                        .amount(investableAmount * ((Number) map.get("percentage")).doubleValue() / 100)
-                                        .build();
-                                results.add(result);
+                        Object allocationsObj = responseMap.get("allocations");
+                        if (allocationsObj instanceof List) {
+                            List<?> list = (List<?>) allocationsObj;
+                            for (Object item : list) {
+                                if (item instanceof java.util.Map) {
+                                    @SuppressWarnings("unchecked")
+                                    java.util.Map<String, Object> map = (java.util.Map<String, Object>) item;
+                                    AllocationResult result = AllocationResult.builder()
+                                            .assetClass((String) map.get("asset_class"))
+                                            .percentage(((Number) map.get("percentage")).doubleValue())
+                                            .amount(investableAmount * ((Number) map.get("percentage")).doubleValue() / 100)
+                                            .build();
+                                    results.add(result);
+                                }
                             }
                         }
                         return results;
@@ -116,48 +124,100 @@ public class MLService {
 
     /**
      * Calls FastAPI to get market data for stocks and gold
-     * Makes GET calls to http://localhost:8001/api/market/stocks and /api/market/gold
+     * Makes POST call to /api/market/stocks/batch and GET to /api/market/gold-silver
      *
      * @return MarketDataSnapshot containing current market data
      */
+    @SuppressWarnings("unchecked")
     public MarketDataSnapshot getMarketData() {
         try {
             log.info("Calling FastAPI getMarketData");
 
-            MarketDataSnapshot snapshot = webClient
-                    .get()
-                    .uri("/api/market/stocks")
+            List<String> tickers = List.of("^BSESN", "RELIANCE.NS", "TCS.NS");
+
+            // --- 1. Fetch batch stock data ---
+            // FastAPI returns: { "results": { "^BSESN": { "ticker", "current_price", ... }, ... }, "fetched_at": "..." }
+            java.util.Map<String, Object> batchResponse = webClient
+                    .post()
+                    .uri("/api/market/stocks/batch")
+                    .bodyValue(java.util.Map.of("tickers", tickers))
                     .retrieve()
-                    .bodyToMono(MarketDataSnapshot.class)
+                    .bodyToMono(java.util.Map.class)
                     .timeout(Duration.ofSeconds(TIMEOUT_SECONDS))
                     .onErrorResume(Exception.class, ex -> {
-                        log.error("Error calling FastAPI market/stocks endpoint: {}", ex.getMessage());
-                        return Mono.just(createMarketDataFallback(ex));
+                        log.error("Error calling FastAPI market/stocks/batch endpoint: {}", ex.getMessage());
+                        return Mono.just(java.util.Map.of());
                     })
                     .block();
 
-            // Try to get gold data
-            if (snapshot != null) {
-                try {
-                    MarketDataSnapshot.GoldData goldData = webClient
-                            .get()
-                            .uri("/api/market/gold")
-                            .retrieve()
-                            .bodyToMono(MarketDataSnapshot.GoldData.class)
-                            .timeout(Duration.ofSeconds(TIMEOUT_SECONDS))
-                            .onErrorResume(Exception.class, ex -> {
-                                log.error("Error calling FastAPI market/gold endpoint: {}", ex.getMessage());
-                                return Mono.empty();
-                            })
-                            .block();
+            List<MarketDataSnapshot.StockData> stockList = new ArrayList<>();
+            String fetchedAt = "";
 
-                    snapshot.setGold(goldData);
-                } catch (Exception e) {
-                    log.warn("Could not retrieve gold data: {}", e.getMessage());
+            if (batchResponse != null) {
+                Object resultsObj = batchResponse.get("results");
+                fetchedAt = (String) batchResponse.getOrDefault("fetched_at", "");
+
+                if (resultsObj instanceof java.util.Map) {
+                    java.util.Map<String, Object> results = (java.util.Map<String, Object>) resultsObj;
+                    for (java.util.Map.Entry<String, Object> entry : results.entrySet()) {
+                        if (entry.getValue() instanceof java.util.Map) {
+                            java.util.Map<String, Object> tickerData = (java.util.Map<String, Object>) entry.getValue();
+                            Double currentPrice = tickerData.get("current_price") instanceof Number
+                                    ? ((Number) tickerData.get("current_price")).doubleValue() : 0.0;
+                            String symbol = (String) tickerData.getOrDefault("ticker", entry.getKey());
+
+                            stockList.add(MarketDataSnapshot.StockData.builder()
+                                    .symbol(symbol)
+                                    .price(currentPrice)
+                                    .change(0.0)        // batch endpoint doesn't provide change
+                                    .changePercent(0.0)  // batch endpoint doesn't provide changePercent
+                                    .build());
+                        }
+                    }
                 }
             }
 
-            log.info("Received market data snapshot");
+            // --- 2. Fetch gold data ---
+            // FastAPI returns: { "gold": { "current_price": ... }, "silver": { ... }, ... }
+            MarketDataSnapshot.GoldData goldData = null;
+            try {
+                java.util.Map<String, Object> goldResponse = webClient
+                        .get()
+                        .uri("/api/market/gold-silver")
+                        .retrieve()
+                        .bodyToMono(java.util.Map.class)
+                        .timeout(Duration.ofSeconds(TIMEOUT_SECONDS))
+                        .onErrorResume(Exception.class, ex -> {
+                            log.error("Error calling FastAPI market/gold-silver endpoint: {}", ex.getMessage());
+                            return Mono.just(java.util.Map.of());
+                        })
+                        .block();
+
+                if (goldResponse != null) {
+                    Object goldObj = goldResponse.get("gold");
+                    if (goldObj instanceof java.util.Map) {
+                        java.util.Map<String, Object> goldMap = (java.util.Map<String, Object>) goldObj;
+                        Double goldPrice = goldMap.get("current_price") instanceof Number
+                                ? ((Number) goldMap.get("current_price")).doubleValue() : 0.0;
+
+                        goldData = MarketDataSnapshot.GoldData.builder()
+                                .price(goldPrice)
+                                .change(0.0)
+                                .changePercent(0.0)
+                                .build();
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Could not retrieve gold data: {}", e.getMessage());
+            }
+
+            MarketDataSnapshot snapshot = MarketDataSnapshot.builder()
+                    .stocks(stockList)
+                    .gold(goldData)
+                    .timestamp(fetchedAt)
+                    .build();
+
+            log.info("Received market data snapshot with {} stocks", stockList.size());
             return snapshot;
 
         } catch (Exception e) {
