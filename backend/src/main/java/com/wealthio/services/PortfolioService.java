@@ -76,7 +76,7 @@ public class PortfolioService {
         log.info("ML risk profile for userId={}: {}", userId, riskCategory);
 
         // 5. Get asset allocation from ML service
-        List<AllocationResult> allocations = mlService.getPortfolioAllocation(riskCategory, investableAmount);
+        List<AllocationResult> allocations = mlService.getPortfolioAllocation(riskCategory, investableAmount, mlRequest);
         log.info("ML allocation for userId={}: {} assets", userId, allocations.size());
 
         // 6. Persist or update Portfolio entity

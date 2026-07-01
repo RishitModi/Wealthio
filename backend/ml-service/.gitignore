@@ -19,5 +19,6 @@ artifacts/
 !data/collect_data.py
 !data/fd_rates.csv
 
-# Keep Prophet historical datasets committed
-!backend/ml-service/data/raw/*.csv
+# Raw datasets
+!data/raw/
+!data/raw/*.csv
