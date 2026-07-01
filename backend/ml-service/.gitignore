@@ -12,3 +12,7 @@ artifacts/
 !data/Finance_Trends.csv
 !data/collect_data.py
 !data/fd_rates.csv
+
+# Raw datasets
+!data/raw/
+!data/raw/*.csv
