@@ -1,14 +1,23 @@
 venv/
 __pycache__/
+
+# Models
 *.pkl
 *.pyc
+
 .env
+
+# ML artifacts
 artifacts/
 
 # ── data/ folder ──────────────────────────────────────────────────────────────
 # Ignore all CSVs — generated files are not committed; run collect_data.py to regenerate.
 *.csv
+
 # Keep the training dataset, the collection script, and static reference data committed.
 !data/Finance_Trends.csv
 !data/collect_data.py
 !data/fd_rates.csv
+
+# Keep Prophet historical datasets committed
+!backend/ml-service/data/raw/*.csv

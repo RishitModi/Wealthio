@@ -9,15 +9,19 @@ import {
   ReferenceLine,
 } from "recharts";
 
-const fmtPrice = (n) =>
-  new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
+const fmtPrice = (n, currency = "INR") =>
+  new Intl.NumberFormat(currency === "USD" ? "en-US" : "en-IN", {
+    style: "currency",
+    currency: currency,
+    maximumFractionDigits: 0,
+  }).format(n);
 
 const fmtDate = (d) => {
   const date = new Date(d);
   return date.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
 };
 
-export default function ForecastChart({ history, forecast, signal }) {
+export default function ForecastChart({ history, forecast, signal, currency = "INR" }) {
   // Merge history and forecast into one series for the chart
   const historyData = (history ?? []).map((h) => ({
     date:     h.date,
@@ -75,8 +79,8 @@ export default function ForecastChart({ history, forecast, signal }) {
             tick={{ fontSize: 10, fontFamily: "var(--font-mono)", fill: "var(--color-on-surface-variant)" }}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(v) => fmtPrice(v)}
-            width={60}
+            tickFormatter={(v) => fmtPrice(v, currency)}
+            width={70}
           />
           <Tooltip
             contentStyle={{
@@ -94,7 +98,7 @@ export default function ForecastChart({ history, forecast, signal }) {
                 upper:    "Upper band",
                 lower:    "Lower band",
               };
-              return [`₹${fmtPrice(value)}`, labels[name] ?? name];
+              return [fmtPrice(value, currency), labels[name] ?? name];
             }}
             labelFormatter={(l) => fmtDate(l)}
           />
