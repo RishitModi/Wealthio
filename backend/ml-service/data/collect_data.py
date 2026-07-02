@@ -1,4 +1,4 @@
-﻿"""
+"""
 data/collect_data.py
 --------------------
 Standalone data collection script for Wealthio ML pipeline.
@@ -14,16 +14,57 @@ Data collected here feeds Steps 3–8 of the ML pipeline.
 Do NOT import this module from FastAPI or any service.
 """
 
+import os
+import time
+from datetime import datetime
 from pathlib import Path
 import numpy as np
 import pandas as pd
+import requests
 import yfinance as yf
 
 DATA_DIR = Path(__file__).resolve().parent
 
 START_DATE = "2014-01-01"
-END_DATE   = "2024-12-31"
+END_DATE = datetime.now().strftime("%Y-%m-%d")
 TRADING_DAYS_PER_YEAR = 252
+
+# State flag to control atomic writes to .tmp files
+_USE_TEMP_FILES = False
+
+def get_write_path(filename: str) -> Path:
+    base_path = DATA_DIR / filename
+    if _USE_TEMP_FILES:
+        return base_path.with_suffix(".tmp.csv")
+    return base_path
+
+def download_with_retry(ticker: str, start_date: str, end_date: str, retries: int = 3, backoff_factor: int = 2) -> pd.DataFrame:
+    for i in range(retries):
+        try:
+            print(f"    Downloading {ticker} (attempt {i+1})...")
+            df = yf.download(ticker, start=start_date, end=end_date, auto_adjust=True, progress=False)
+            if df.empty:
+                raise RuntimeError(f"yfinance returned empty data for {ticker}")
+            return df
+        except Exception as e:
+            if i == retries - 1:
+                raise e
+            sleep_time = backoff_factor ** i
+            print(f"    Warning: Download failed for {ticker}: {e}. Retrying in {sleep_time}s...")
+            time.sleep(sleep_time)
+
+def fetch_url_with_retry(url: str, timeout: int = 30, retries: int = 3, backoff_factor: int = 2) -> requests.Response:
+    for i in range(retries):
+        try:
+            resp = requests.get(url, timeout=timeout)
+            resp.raise_for_status()
+            return resp
+        except Exception as e:
+            if i == retries - 1:
+                raise e
+            sleep_time = backoff_factor ** i
+            print(f"    Warning: HTTP fetch failed: {e}. Retrying in {sleep_time}s...")
+            time.sleep(sleep_time)
 
 
 # -- Asset 1: Nifty 50 -- Indian Equity / Stocks proxy -------------------------
@@ -46,7 +87,7 @@ def collect_nifty50() -> pd.DataFrame:
     """
     print("\n[Asset 1] Collecting Nifty 50 (^NSEI) ...")
 
-    raw = yf.download("^NSEI", start=START_DATE, end=END_DATE, auto_adjust=True, progress=False)
+    raw = download_with_retry("^NSEI", start_date=START_DATE, end_date=END_DATE)
 
     if raw.empty:
         raise RuntimeError("yfinance returned no data for ^NSEI. Check ticker and network.")
@@ -71,7 +112,7 @@ def collect_nifty50() -> pd.DataFrame:
     print(f"  Annualised volatility: {ann_vol:.4f}  ({ann_vol*100:.2f}%)")
 
     # -- Save -----------------------------------------------------------------
-    out_path = DATA_DIR / "nifty50_daily.csv"
+    out_path = get_write_path("nifty50_daily.csv")
     df.reset_index()[["Date", "Close", "Daily_Return"]].to_csv(out_path, index=False)
     print(f"  Saved -> {out_path}")
 
@@ -102,8 +143,8 @@ def collect_gold() -> pd.DataFrame:
     """
     print("\n[Asset 2] Collecting Gold (GC=F x USDINR=X -> INR) ...")
 
-    raw_gold = yf.download("GC=F",     start=START_DATE, end=END_DATE, auto_adjust=True, progress=False)
-    raw_fx   = yf.download("USDINR=X", start=START_DATE, end=END_DATE, auto_adjust=True, progress=False)
+    raw_gold = download_with_retry("GC=F",     start_date=START_DATE, end_date=END_DATE)
+    raw_fx   = download_with_retry("USDINR=X", start_date=START_DATE, end_date=END_DATE)
 
     if raw_gold.empty:
         raise RuntimeError("yfinance returned no data for GC=F. Check ticker and network.")
@@ -146,7 +187,7 @@ def collect_gold() -> pd.DataFrame:
     print(f"  Annualised volatility (INR): {ann_vol:.4f}  ({ann_vol*100:.2f}%)")
 
     # -- Save -----------------------------------------------------------------
-    out_path = DATA_DIR / "gold_daily.csv"
+    out_path = get_write_path("gold_daily.csv")
     df.reset_index()[["Date", "Close_USD", "USDINR", "Close_INR", "Daily_Return"]].to_csv(out_path, index=False)
     print(f"  Saved -> {out_path}")
 
@@ -178,7 +219,7 @@ def collect_etf() -> pd.DataFrame:
     """
     print("\n[Asset 3] Collecting ETF (NIFTYBEES.NS) ...")
 
-    raw = yf.download("NIFTYBEES.NS", start=START_DATE, end=END_DATE, auto_adjust=True, progress=False)
+    raw = download_with_retry("NIFTYBEES.NS", start_date=START_DATE, end_date=END_DATE)
 
     if raw.empty:
         raise RuntimeError("yfinance returned no data for NIFTYBEES.NS. Check ticker and network.")
@@ -215,7 +256,7 @@ def collect_etf() -> pd.DataFrame:
     print(f"  Annualised volatility: {ann_vol:.4f}  ({ann_vol*100:.2f}%)")
 
     # -- Save -----------------------------------------------------------------
-    out_path = DATA_DIR / "etf_daily.csv"
+    out_path = get_write_path("etf_daily.csv")
     df.reset_index()[["Date", "Close", "Daily_Return"]].to_csv(out_path, index=False)
     print(f"  Saved -> {out_path}")
 
@@ -279,7 +320,7 @@ def _fetch_fund(scheme_code: int, name: str) -> pd.DataFrame:
     url = AMFI_API_URL.format(scheme_code=scheme_code)
     print(f"    Fetching {name} (scheme {scheme_code}) ...")
 
-    resp = requests.get(url, timeout=30)
+    resp = fetch_url_with_retry(url, timeout=30)
     resp.raise_for_status()
 
     payload = resp.json()
@@ -367,7 +408,7 @@ def collect_mutual_funds() -> pd.DataFrame:
         print(f"      Ann. vol    : {ann_vol*100:.2f}%")
 
         # -- Save individual fund CSV ------------------------------------------
-        out_path = DATA_DIR / f"mf_{scheme_code}_daily.csv"
+        out_path = get_write_path(f"mf_{scheme_code}_daily.csv")
         df.reset_index()[["Date", "NAV", "Daily_Return"]].to_csv(out_path, index=False)
         print(f"      Saved -> {out_path}")
 
@@ -396,7 +437,7 @@ def collect_mutual_funds() -> pd.DataFrame:
     print(f"  Ann. vol    : {ann_vol*100:.2f}%")
 
     # -- Save composite CSV ----------------------------------------------------
-    out_path = DATA_DIR / "mutual_fund_composite_daily.csv"
+    out_path = get_write_path("mutual_fund_composite_daily.csv")
     composite.reset_index()[["Date", "Wtd_Daily_Return"]].to_csv(out_path, index=False)
     print(f"  Saved -> {out_path}")
 
@@ -454,7 +495,7 @@ def create_fd_rates() -> pd.DataFrame:
     print(f"  Current rate (2024): {FD_CURRENT_RATE_PCT}%")
     print(f"  Average rate across period: {df['Annual_Return_Pct'].mean():.2f}%")
 
-    out_path = DATA_DIR / "fd_rates.csv"
+    out_path = get_write_path("fd_rates.csv")
     df.to_csv(out_path, index=False)
     print(f"  Saved -> {out_path}  (committed to git -- static reference data)")
 
@@ -534,7 +575,7 @@ def create_asset_summary(
             f"{row['trading_days']:>6,}"
         )
 
-    out_path = DATA_DIR / "asset_summary.csv"
+    out_path = get_write_path("asset_summary.csv")
     summary_df.to_csv(out_path, index=False)
     print(f"\n  Saved -> {out_path}")
 
@@ -615,19 +656,23 @@ def compute_covariance_matrix(
         print(f"    {asset:<16}: {implied_vol*100:.2f}%")
 
     # -- Save ---------------------------------------------------------------
-    out_path = DATA_DIR / "covariance_matrix.csv"
+    out_path = get_write_path("covariance_matrix.csv")
     annual_cov.to_csv(out_path)
     print(f"\n  Saved -> {out_path}")
 
     return annual_cov
 
 
-# -- Entry point ---------------------------------------------------------------
+# -- Entry point & Validation --------------------------------------------------
 
-if __name__ == "__main__":
+def run_collection_pipeline(use_temp_files: bool = False):
+    global _USE_TEMP_FILES
+    _USE_TEMP_FILES = use_temp_files
+    
     print("=" * 60)
-    print("Wealthio -- Market Data Collection")
+    print("Wealthio -- Market Data Collection Pipeline")
     print(f"Period: {START_DATE} to {END_DATE}")
+    print(f"Using temporary files: {use_temp_files}")
     print("=" * 60)
 
     nifty_df = collect_nifty50()
@@ -638,4 +683,70 @@ if __name__ == "__main__":
     create_asset_summary(nifty_df, gold_df, etf_df, mf_df)
     compute_covariance_matrix(nifty_df, gold_df, etf_df, mf_df)
 
+    if use_temp_files:
+        validate_and_replace_temp_files()
+    
     print("\nDone.")
+
+def validate_and_replace_temp_files():
+    print("\n[Validation] Running quality checks on temporary files...")
+    files_to_check = [
+        "nifty50_daily.csv",
+        "gold_daily.csv",
+        "etf_daily.csv",
+        "mutual_fund_composite_daily.csv",
+        "fd_rates.csv",
+        "asset_summary.csv",
+        "covariance_matrix.csv"
+    ]
+    for code in MUTUAL_FUNDS.keys():
+        files_to_check.append(f"mf_{code}_daily.csv")
+        
+    for filename in files_to_check:
+        temp_path = DATA_DIR / filename.replace(".csv", ".tmp.csv")
+        if not temp_path.exists():
+            raise FileNotFoundError(f"Validation failed: Temporary file not found: {temp_path}")
+        
+        df = pd.read_csv(temp_path)
+        if len(df) == 0:
+            raise ValueError(f"Validation failed: {temp_path.name} is empty.")
+            
+        if filename == "covariance_matrix.csv":
+            # df shape will have index col, so 4x5
+            if df.shape != (4, 5):
+                raise ValueError(f"Validation failed: Covariance matrix shape is {df.shape}, expected 4x5")
+        elif filename == "asset_summary.csv":
+            if len(df) != 4:
+                raise ValueError(f"Validation failed: Asset summary length is {len(df)}, expected 4")
+        elif filename in ["nifty50_daily.csv", "gold_daily.csv"]:
+            latest_date_str = df["Date"].iloc[-1] if "Date" in df.columns else df.iloc[-1, 0]
+            latest_date = pd.to_datetime(latest_date_str)
+            days_ago = (datetime.now() - latest_date).days
+            if days_ago > 10:
+                print(f"    Warning: Latest date in {filename} is {latest_date.strftime('%Y-%m-%d')}, which is {days_ago} days old.")
+    
+    print("[Validation] All temporary files passed health checks. Committing changes...")
+    for filename in files_to_check:
+        temp_path = DATA_DIR / filename.replace(".csv", ".tmp.csv")
+        final_path = DATA_DIR / filename
+        
+        # Atomic rename at OS level
+        if os.path.exists(final_path):
+            backup_path = final_path.with_suffix(".bak.csv")
+            try:
+                os.replace(final_path, backup_path)
+            except Exception:
+                pass
+        
+        os.replace(temp_path, final_path)
+        print(f"    Committed -> {final_path}")
+        
+        backup_path = final_path.with_suffix(".bak.csv")
+        if backup_path.exists():
+            try:
+                os.remove(backup_path)
+            except Exception:
+                pass
+
+if __name__ == "__main__":
+    run_collection_pipeline(use_temp_files=False)

@@ -137,22 +137,23 @@ def apply_shrinkage(
 
 # -- Public entry point -------------------------------------------------------
 
+_SHRUNK_RETURNS_CACHE: Dict[float, Dict[str, float]] = {}
+
+def clear_shrinkage_cache():
+    _SHRUNK_RETURNS_CACHE.clear()
+
 def get_shrunk_returns(
     shrinkage_factor: float = DEFAULT_SHRINKAGE_FACTOR,
 ) -> Dict[str, float]:
     """
     Main entry point for Step 6. Loads raw returns from asset_summary.csv
     and applies James-Stein shrinkage with the given factor.
-
-    Parameters
-    ----------
-    shrinkage_factor:
-        Alpha in [0, 1]. Defaults to 0.3 (see module docstring for rationale).
-
-    Returns
-    -------
-    Dict mapping asset name -> shrunk annualised return (decimal),
-    in RISKY_ASSETS canonical order: stocks, gold, mutual_funds, etf.
+    Utilizes an in-memory cache to bypass disk read/calculations on request.
     """
+    if shrinkage_factor in _SHRUNK_RETURNS_CACHE:
+        return _SHRUNK_RETURNS_CACHE[shrinkage_factor]
+
     raw = load_raw_returns()
-    return apply_shrinkage(raw, shrinkage_factor)
+    res = apply_shrinkage(raw, shrinkage_factor)
+    _SHRUNK_RETURNS_CACHE[shrinkage_factor] = res
+    return res
