@@ -22,7 +22,7 @@ const fmtDate = (d) => {
 };
 
 export default function ForecastChart({ history, forecast, signal, currency = "INR" }) {
-  // Merge history and forecast into one series for the chart
+  // Merge history and forecast into one series
   const historyData = (history ?? []).map((h) => ({
     date:     h.date,
     actual:   h.price,
@@ -39,7 +39,6 @@ export default function ForecastChart({ history, forecast, signal, currency = "I
     upper:    f.upper,
   }));
 
-  // Join point — last history price appears as start of forecast line
   if (historyData.length > 0 && forecastData.length > 0) {
     const last = historyData[historyData.length - 1];
     forecastData[0] = {
@@ -50,7 +49,6 @@ export default function ForecastChart({ history, forecast, signal, currency = "I
 
   const combined = [...historyData, ...forecastData];
 
-  // Show every 10th label to avoid crowding
   const tickIndices = new Set(
     combined
       .map((_, i) => i)
@@ -58,25 +56,25 @@ export default function ForecastChart({ history, forecast, signal, currency = "I
   );
 
   const signalColor = {
-    BUY:  "#4EDEA3",
-    HOLD: "#F5A623",
-    WAIT: "#E05C5C",
-  }[signal] ?? "#9B8EFF";
+    BUY:  "#10B981",  // Emerald
+    HOLD: "#F59E0B",  // Amber
+    WAIT: "#EF4444",  // Red
+  }[signal] ?? "#4F46E5";
 
   return (
-    <div style={{ height: 200 }}>
+    <div className="w-full h-full min-h-[220px]">
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={combined} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
           <XAxis
             dataKey="date"
-            tick={{ fontSize: 10, fontFamily: "var(--font-mono)", fill: "var(--color-on-surface-variant)" }}
+            tick={{ fontSize: 10, fontFamily: "var(--font-mono)", fill: "#6B7280" }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v, i) => (tickIndices.has(i) ? fmtDate(v) : "")}
           />
           <YAxis
             domain={["auto", "auto"]}
-            tick={{ fontSize: 10, fontFamily: "var(--font-mono)", fill: "var(--color-on-surface-variant)" }}
+            tick={{ fontSize: 10, fontFamily: "var(--font-mono)", fill: "#6B7280" }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v) => fmtPrice(v, currency)}
@@ -84,19 +82,20 @@ export default function ForecastChart({ history, forecast, signal, currency = "I
           />
           <Tooltip
             contentStyle={{
-              borderRadius: 10,
-              border: "1px solid var(--color-outline-variant)",
+              borderRadius: 16,
+              border: "1px solid #E5E7EB",
               fontSize: 12,
               fontFamily: "var(--font-mono)",
-              background: "var(--color-surface-container-lowest)",
+              background: "#FFFFFF",
+              boxShadow: "0 8px 30px rgba(15, 23, 42, 0.04)"
             }}
             formatter={(value, name) => {
               if (value == null) return null;
               const labels = {
-                actual:   "Actual",
-                forecast: "Forecast",
-                upper:    "Upper band",
-                lower:    "Lower band",
+                actual:   "Actual Price",
+                forecast: "Prophet Forecast",
+                upper:    "Upper Confidence",
+                lower:    "Lower Confidence",
               };
               return [fmtPrice(value, currency), labels[name] ?? name];
             }}
@@ -109,13 +108,13 @@ export default function ForecastChart({ history, forecast, signal, currency = "I
             dataKey="upper"
             fill={signalColor}
             stroke="none"
-            fillOpacity={0.12}
+            fillOpacity={0.08}
             connectNulls
           />
           <Area
             type="monotone"
             dataKey="lower"
-            fill="var(--color-surface-container-lowest)"
+            fill="#FFFFFF"
             stroke="none"
             fillOpacity={1}
             connectNulls
@@ -125,8 +124,8 @@ export default function ForecastChart({ history, forecast, signal, currency = "I
           <Line
             type="monotone"
             dataKey="actual"
-            stroke="var(--color-on-surface-variant)"
-            strokeWidth={1.5}
+            stroke="#9CA3AF"
+            strokeWidth={2}
             dot={false}
             connectNulls
           />
@@ -136,7 +135,7 @@ export default function ForecastChart({ history, forecast, signal, currency = "I
             type="monotone"
             dataKey="forecast"
             stroke={signalColor}
-            strokeWidth={2}
+            strokeWidth={2.5}
             strokeDasharray="5 3"
             dot={false}
             connectNulls
@@ -146,14 +145,15 @@ export default function ForecastChart({ history, forecast, signal, currency = "I
           {historyData.length > 0 && (
             <ReferenceLine
               x={historyData[historyData.length - 1].date}
-              stroke="var(--color-outline-variant)"
+              stroke="#E5E7EB"
               strokeDasharray="3 3"
               label={{
                 value: "Today",
                 position: "insideTopRight",
-                fontSize: 10,
+                fontSize: 9,
                 fontFamily: "var(--font-mono)",
-                fill: "var(--color-on-surface-variant)",
+                fill: "#6B7280",
+                fontWeight: "bold"
               }}
             />
           )}

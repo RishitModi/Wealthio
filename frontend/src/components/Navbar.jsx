@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { LogOut, TrendingUp, User } from "lucide-react";
 import useAuth from "../context/useAuth";
 
 export default function Navbar() {
@@ -11,35 +12,40 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-outline-variant bg-surface-container-lowest/90 backdrop-blur-md px-6 py-3 flex justify-between items-center shadow-sm">
-      {/* ── Logo / Brand ── */}
-      <div className="flex items-center gap-2">
-        <span className="material-symbols-outlined text-[22px] text-primary">
-          show_chart
-        </span>
+    <header className="sticky top-0 z-50 border-b border-[#E5E7EB] bg-white/80 backdrop-blur-md px-6 py-4 flex justify-between items-center shadow-premium">
+      {/* Brand logo */}
+      <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/dashboard")}>
+        <div className="bg-primary/10 p-2 rounded-xl text-primary flex items-center justify-center">
+          <TrendingUp className="h-5 w-5" />
+        </div>
         <span
-          className="font-display text-[18px] font-extrabold tracking-tight text-on-surface"
-          style={{ fontFamily: "var(--font-display)" }}
+          className="text-lg font-extrabold tracking-tight text-[#111827] font-display"
         >
           Wealthio
         </span>
       </div>
 
-      {/* ── Right side ── */}
+      {/* Right nav options */}
       <div className="flex items-center gap-4">
-        <span
-          className="hidden sm:block text-sm font-semibold text-on-surface-variant"
-          style={{ fontFamily: "var(--font-mono)" }}
-        >
-          {user?.email}
-        </span>
+        {user && (
+          <div className="flex items-center gap-2 bg-[#F1F5F9] px-3 py-1.5 rounded-xl border border-[#E5E7EB]">
+            <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">
+              <User className="h-3 w-3" />
+            </div>
+            <span
+              className="hidden sm:block text-xs font-semibold text-[#6B7280] font-mono"
+            >
+              {user.email}
+            </span>
+          </div>
+        )}
         <button
           id="navbar-logout-btn"
           onClick={handleLogout}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-outline-variant text-sm font-semibold text-on-surface hover:bg-surface-variant transition-all duration-150"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#E5E7EB] text-xs font-bold text-[#111827] hover:bg-[#F8FAFC] transition-all cursor-pointer shadow-sm active:scale-95"
         >
-          <span className="material-symbols-outlined text-[16px]">logout</span>
-          Log out
+          <LogOut className="h-3.5 w-3.5" />
+          <span>Log out</span>
         </button>
       </div>
     </header>

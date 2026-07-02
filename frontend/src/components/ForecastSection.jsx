@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
+import { RefreshCw, TrendingUp, AlertTriangle } from "lucide-react";
 import ForecastCard from "./ForecastCard";
 import { getForecast } from "../api/forecastApi";
 
-function SectionHeading({ icon, title }) {
+function SectionHeading({ title }) {
   return (
-    <div className="flex items-center gap-2 mb-4">
-      <span className="material-symbols-outlined text-[20px] text-secondary">{icon}</span>
-      <h2
-        className="text-[15px] font-bold uppercase tracking-widest text-on-surface-variant"
-        style={{ fontFamily: "var(--font-mono)" }}
-      >
+    <div className="flex items-center gap-2 mb-2">
+      <div className="bg-primary/10 p-2 rounded-xl text-primary flex items-center justify-center">
+        <TrendingUp className="h-4.5 w-4.5" />
+      </div>
+      <h2 className="text-xs font-bold uppercase tracking-wider text-[#111827] font-mono">
         {title}
       </h2>
     </div>
@@ -18,9 +18,9 @@ function SectionHeading({ icon, title }) {
 
 function LoadingSpinner({ label }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-16 text-on-surface-variant">
-      <div className="h-8 w-8 rounded-full border-2 border-outline-variant border-t-secondary animate-spin" />
-      <p className="text-sm font-medium">{label}</p>
+    <div className="flex flex-col items-center justify-center gap-3 py-20 text-[#6B7280]">
+      <div className="h-8 w-8 rounded-full border-2 border-[#F1F5F9] border-t-primary animate-spin" />
+      <p className="text-xs font-semibold text-[#111827]">{label}</p>
     </div>
   );
 }
@@ -35,14 +35,19 @@ export default function ForecastSection() {
 
   const fetchForecasts = async (p = periods, currency = goldCurrency) => {
     setLoading(true);
-    const [gold, nifty] = await Promise.all([
-      getForecast("gold", p, currency),
-      getForecast("nifty", p),
-    ]);
-    setForecasts({ gold, nifty });
-    setLastFetched(new Date());
-    setLoading(false);
-    setCooldown(30);
+    try {
+      const [gold, nifty] = await Promise.all([
+        getForecast("gold", p, currency),
+        getForecast("nifty", p),
+      ]);
+      setForecasts({ gold, nifty });
+      setLastFetched(new Date());
+    } catch {
+      // Fail silently or fallback
+    } finally {
+      setLoading(false);
+      setCooldown(30);
+    }
   };
 
   useEffect(() => { fetchForecasts(); }, []);
@@ -60,9 +65,13 @@ export default function ForecastSection() {
 
   const handleCurrencyChange = async (currency) => {
     setGoldCurrency(currency);
-    const gold = await getForecast("gold", periods, currency);
-    setForecasts((prev) => ({ ...prev, gold }));
-    setLastFetched(new Date());
+    try {
+      const gold = await getForecast("gold", periods, currency);
+      setForecasts((prev) => ({ ...prev, gold }));
+      setLastFetched(new Date());
+    } catch {
+      // Fail silently
+    }
   };
 
   const relativeTime = (date) => {
@@ -73,41 +82,44 @@ export default function ForecastSection() {
     return date.toLocaleTimeString("en-IN");
   };
 
-  // Signal consistency callout
   const bothSame =
     forecasts.gold?.signal &&
     forecasts.nifty?.signal &&
     forecasts.gold.signal === forecasts.nifty.signal;
 
   const calloutText = {
-    BUY:  "Both tracked assets show bullish momentum — portfolio entry conditions are favorable.",
-    WAIT: "Caution across asset classes — consider holding cash positions temporarily.",
-    HOLD: "Markets are relatively stable across both tracked assets.",
+    BUY:  "Both tracked assets show bullish momentum — portfolio entry conditions are highly favorable.",
+    WAIT: "Caution is advised across asset classes — consider maintaining cash positions temporarily.",
+    HOLD: "Markets show stable indicators across both tracked assets.",
   };
 
   const calloutBorder = {
-    BUY:  "border-emerald-400 bg-emerald-50 text-emerald-800",
-    WAIT: "border-red-400 bg-red-50 text-red-800",
-    HOLD: "border-amber-400 bg-amber-50 text-amber-800",
+    BUY:  "border-emerald-500 bg-emerald-50 text-emerald-800",
+    WAIT: "border-rose-500 bg-rose-50 text-rose-800",
+    HOLD: "border-amber-500 bg-amber-50 text-amber-800",
   };
 
   return (
-    <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm flex flex-col gap-5">
-
-      {/* Header row */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <SectionHeading icon="query_stats" title="AI Market Forecast · Prophet" />
+    <div className="rounded-3xl border border-[#E5E7EB] bg-white p-6 shadow-premium flex flex-col gap-6 hover:shadow-premium-hover transition-all duration-300">
+      
+      {/* Header Row */}
+      <div className="flex items-center justify-between flex-wrap gap-4 border-b border-[#F1F5F9] pb-4">
+        <div>
+          <SectionHeading title="AI Market Forecast (Prophet)" />
+          <p className="text-xs font-medium text-[#6B7280]">Algorithmic 30-day time-series forecasting</p>
+        </div>
+        
         <div className="flex flex-col items-end gap-1">
           <button
             onClick={() => fetchForecasts(periods, goldCurrency)}
             disabled={cooldown > 0 || loading}
-            className="flex items-center gap-1.5 rounded-xl border border-outline-variant px-3 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface-container disabled:opacity-40 transition-all"
+            className="flex items-center gap-2 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2 text-xs font-bold text-[#111827] hover:bg-[#F8FAFC] disabled:opacity-40 transition-all cursor-pointer shadow-sm active:scale-95"
           >
-            <span className="material-symbols-outlined text-[15px]">sync</span>
-            {cooldown > 0 ? `Refresh in ${cooldown}s` : "Refresh"}
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            <span>{cooldown > 0 ? `Retry in ${cooldown}s` : "Recalculate"}</span>
           </button>
           {lastFetched && (
-            <p className="text-[10px] text-on-surface-variant" style={{ fontFamily: "var(--font-mono)" }}>
+            <p className="text-[10px] text-[#9CA3AF] font-bold font-mono">
               Last analysed: {relativeTime(lastFetched)}
             </p>
           )}
@@ -122,27 +134,27 @@ export default function ForecastSection() {
             <button
               key={p}
               onClick={() => handlePeriodChange(p)}
-              className={`rounded-full px-3 py-1 text-xs font-bold border transition-all ${
+              className={`rounded-xl px-4 py-2 text-xs font-bold border transition-all cursor-pointer ${
                 periods === p
-                  ? "bg-secondary text-on-secondary border-secondary"
-                  : "border-outline-variant text-on-surface-variant hover:bg-surface-container"
+                  ? "bg-primary text-white border-primary shadow-sm"
+                  : "border-[#E5E7EB] text-[#6B7280] hover:bg-[#F8FAFC]"
               }`}
             >
-              {p} days
+              {p}d Forecast
             </button>
           ))}
         </div>
 
         {/* Currency Selector */}
-        <div className="flex items-center gap-2 rounded-xl bg-surface-container p-0.5 border border-outline-variant">
+        <div className="flex items-center gap-1 rounded-xl bg-[#F1F5F9] p-1 border border-[#E5E7EB]">
           {["INR", "USD"].map((curr) => (
             <button
               key={curr}
               onClick={() => handleCurrencyChange(curr)}
-              className={`rounded-lg px-3 py-1 text-xs font-bold transition-all ${
+              className={`rounded-lg px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
                 goldCurrency === curr
-                  ? "bg-surface-container-lowest text-secondary shadow-sm"
-                  : "text-on-surface-variant hover:text-on-surface"
+                  ? "bg-white text-primary shadow-sm font-extrabold"
+                  : "text-[#6B7280] hover:text-[#111827]"
               }`}
             >
               {curr}
@@ -151,22 +163,23 @@ export default function ForecastSection() {
         </div>
       </div>
 
-      {/* Cards */}
+      {/* Cards Grid */}
       {loading ? (
-        <LoadingSpinner label="Running Prophet forecast on real market data…" />
+        <LoadingSpinner label="Running Prophet forecast on historical price indices..." />
       ) : (
-        <div className="flex flex-wrap gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <ForecastCard data={forecasts.gold} />
           <ForecastCard data={forecasts.nifty} />
         </div>
       )}
 
-      {/* Signal consistency callout */}
+      {/* Callout */}
       {!loading && bothSame && (
         <div
-          className={`rounded-xl border-l-4 px-4 py-3 text-sm font-medium ${calloutBorder[forecasts.gold.signal]}`}
+          className={`rounded-2xl border-l-4 px-5 py-4 text-xs font-semibold flex items-center gap-3 ${calloutBorder[forecasts.gold.signal]}`}
         >
-          {calloutText[forecasts.gold.signal]}
+          <AlertTriangle className="h-4.5 w-4.5 shrink-0" />
+          <span>{calloutText[forecasts.gold.signal]}</span>
         </div>
       )}
 
