@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Mail, Lock, User, ShieldCheck, ArrowRight, TrendingUp } from "lucide-react";
 import useAuth from "../context/useAuth";
 import { register } from "../api/authApi";
 
@@ -53,101 +55,206 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-0 md:p-10">
-      <div className="flex flex-col md:flex-row w-full max-w-[1280px] bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-2xl relative min-h-[800px]">
-        {/* Left Panel */}
-        <div className="hidden md:flex md:w-1/2 flex-col justify-between p-12 bg-abstract-growth relative border-r border-outline-variant">
-          <div className="growth-curves"></div>
-          <div className="z-10 flex flex-col gap-8">
-            <img alt="Wealthio Logo" className="h-12 w-auto object-contain self-start brightness-0 invert" src="/wealthio-logo.svg" />
-            <div className="mt-24 space-y-4">
-              <h1 className="font-display text-[48px] leading-[56px] tracking-[-0.02em] font-extrabold text-white max-w-md">
-                Grow your wealth with AI-powered precision.
-              </h1>
-              <p className="font-body text-[18px] leading-[28px] font-medium text-gray-300 max-w-md">
-                Join thousands of Indian professionals building their future with Wealthio.
-              </p>
-            </div>
+    <div className="min-h-screen w-full flex bg-[#F8FAFC] font-body text-[#111827] antialiased overflow-x-hidden">
+      {/* Left side panel */}
+      <div className="hidden lg:flex flex-col w-[45%] bg-abstract-growth relative p-12 justify-between border-r border-[#E5E7EB] text-white">
+        <div className="growth-curves" />
+        
+        {/* Brand logo */}
+        <div className="relative z-10 flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
+          <div className="bg-white/10 p-2.5 rounded-xl backdrop-blur-md border border-white/20 flex items-center justify-center">
+            <TrendingUp className="h-6 w-6 text-white" />
           </div>
-          {/* Decorative bars */}
-          <div className="z-10 self-end opacity-60">
-            <div className="flex items-end gap-2 h-32">
-              <div className="w-1 bg-gradient-to-t from-transparent to-surface-variant h-1/4 rounded-full relative"><div className="absolute -top-1 -left-0.5 w-2 h-2 rounded-full bg-surface-variant"></div></div>
-              <div className="w-1 bg-gradient-to-t from-transparent to-surface-variant h-2/4 rounded-full relative"><div className="absolute -top-1 -left-0.5 w-2 h-2 rounded-full bg-surface-variant"></div></div>
-              <div className="w-1 bg-gradient-to-t from-transparent to-tertiary-fixed-dim h-1/2 rounded-full relative"><div className="absolute -top-1 -left-0.5 w-2 h-2 rounded-full bg-tertiary-fixed-dim"></div></div>
-              <div className="w-1 bg-gradient-to-t from-transparent to-secondary-container h-3/4 rounded-full relative"><div className="absolute -top-1 -left-0.5 w-2 h-2 rounded-full bg-secondary-container"></div></div>
-              <div className="w-1 bg-gradient-to-t from-transparent to-secondary h-full rounded-full relative"><div className="absolute -top-1 -left-0.5 w-2 h-2 rounded-full bg-secondary"></div></div>
+          <span className="text-xl font-extrabold tracking-tight font-display">
+            Wealthio
+          </span>
+        </div>
+
+        {/* Headline */}
+        <div className="relative z-10 flex flex-col gap-6 max-w-md my-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 border border-white/20 backdrop-blur-md mb-4 text-[#A5B4FC]">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Smarter Personal Finance
+            </span>
+            <h1 className="font-display text-4xl font-extrabold leading-tight tracking-tight mb-4">
+              Grow your wealth with AI-powered precision.
+            </h1>
+            <p className="text-white/80 text-sm leading-relaxed font-medium">
+              Join thousands of Indian professionals building their future with Wealthio.
+            </p>
+          </motion.div>
+
+          <div className="mt-8 grid grid-cols-2 gap-4 border-t border-white/10 pt-8">
+            <div>
+              <p className="text-2xl font-extrabold font-display text-white">100%</p>
+              <p className="text-xs text-white/60 font-semibold uppercase tracking-wider mt-1">Data Control</p>
+            </div>
+            <div>
+              <p className="text-2xl font-extrabold font-display text-white">Prophet</p>
+              <p className="text-xs text-white/60 font-semibold uppercase tracking-wider mt-1">AI Forecasting</p>
             </div>
           </div>
         </div>
 
-        {/* Right Panel — Form */}
-        <div className="w-full md:w-1/2 p-4 md:p-16 flex flex-col justify-center bg-surface relative z-20">
-          <div className="md:hidden flex justify-center mb-8">
-            <img alt="Wealthio Logo" className="h-10 w-auto object-contain" src="/wealthio-logo.svg" />
-          </div>
-          <div className="max-w-md w-full mx-auto space-y-8">
-            <div className="text-center md:text-left space-y-2">
-              <h2 className="font-display text-[32px] leading-[40px] tracking-[-0.01em] font-bold text-on-surface">Create Account</h2>
-              <p className="font-body text-[16px] leading-[24px] font-medium text-on-surface-variant">Secure your financial future today.</p>
-            </div>
-
-            {apiError && (
-              <div className="bg-error-container text-on-error-container text-sm px-4 py-3 rounded-lg">{apiError}</div>
-            )}
-
-            <form className="space-y-4" onSubmit={handleSubmit} id="registerForm">
-              {/* Full Name */}
-              <div className="space-y-2">
-                <label className="font-mono text-[12px] leading-[16px] tracking-[0.04em] font-semibold text-on-surface-variant uppercase" htmlFor="fullName">Full Name</label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant">person</span>
-                  <input className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg py-3 pl-12 pr-4 font-body text-[16px] leading-[24px] text-on-surface placeholder:text-outline-variant transition-colors hover:border-outline" id="fullName" placeholder="Jane Doe" type="text" value={form.fullName} onChange={set("fullName")} />
-                </div>
-                {errors.fullName && <p className="text-error text-xs mt-1">{errors.fullName}</p>}
-              </div>
-              {/* Email */}
-              <div className="space-y-2">
-                <label className="font-mono text-[12px] leading-[16px] tracking-[0.04em] font-semibold text-on-surface-variant uppercase" htmlFor="email">Email Address</label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant">mail</span>
-                  <input className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg py-3 pl-12 pr-4 font-body text-[16px] leading-[24px] text-on-surface placeholder:text-outline-variant transition-colors hover:border-outline" id="email" placeholder="jane@example.com" type="email" value={form.email} onChange={set("email")} />
-                </div>
-                {errors.email && <p className="text-error text-xs mt-1">{errors.email}</p>}
-              </div>
-              {/* Password */}
-              <div className="space-y-2">
-                <label className="font-mono text-[12px] leading-[16px] tracking-[0.04em] font-semibold text-on-surface-variant uppercase" htmlFor="password">Password</label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant">lock</span>
-                  <input className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg py-3 pl-12 pr-4 font-body text-[16px] leading-[24px] text-on-surface placeholder:text-outline-variant transition-colors hover:border-outline" id="password" placeholder="••••••••" type="password" value={form.password} onChange={set("password")} />
-                </div>
-                {errors.password && <p className="text-error text-xs mt-1">{errors.password}</p>}
-              </div>
-              {/* Confirm Password */}
-              <div className="space-y-2">
-                <label className="font-mono text-[12px] leading-[16px] tracking-[0.04em] font-semibold text-on-surface-variant uppercase" htmlFor="confirmPassword">Confirm Password</label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant">lock</span>
-                  <input className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg py-3 pl-12 pr-4 font-body text-[16px] leading-[24px] text-on-surface placeholder:text-outline-variant transition-colors hover:border-outline" id="confirmPassword" placeholder="••••••••" type="password" value={form.confirmPassword} onChange={set("confirmPassword")} />
-                </div>
-                {errors.confirmPassword && <p className="text-error text-xs mt-1">{errors.confirmPassword}</p>}
-              </div>
-              {/* Submit */}
-              <div className="pt-2">
-                <button className="w-full bg-secondary-container hover:bg-secondary text-on-secondary-container font-mono text-[14px] leading-[20px] tracking-[0.02em] font-semibold py-3 px-4 rounded-lg transition-all duration-200 flex justify-center items-center gap-2 shadow-sm active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed" id="submitBtn" type="submit" disabled={loading}>
-                  {loading ? (<><span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span> Please wait...</>) : "Create Account"}
-                </button>
-              </div>
-            </form>
-            <div className="text-center pt-2">
-              <p className="font-body text-[16px] leading-[24px] font-medium text-on-surface-variant">
-                Already have an account?{" "}
-                <Link className="text-secondary hover:text-secondary-container transition-colors font-semibold" to="/login">Log In</Link>
-              </p>
-            </div>
-          </div>
+        {/* Security badge footer */}
+        <div className="relative z-10 flex items-center gap-2 text-white/60 text-xs font-mono uppercase tracking-wider font-semibold">
+          <ShieldCheck className="h-4 w-4 text-emerald-400" />
+          <span>Bank-level Security • End-to-end Encryption</span>
         </div>
+      </div>
+
+      {/* Right side form panel */}
+      <div className="w-full lg:w-[55%] flex flex-col justify-center items-center p-6 md:p-12 relative bg-[#F8FAFC]">
+        {/* Mobile Header Logo */}
+        <div className="lg:hidden absolute top-6 left-6 flex items-center gap-2">
+          <div className="bg-primary/10 p-2 rounded-xl text-primary flex items-center justify-center">
+            <TrendingUp className="h-5 w-5" />
+          </div>
+          <span className="text-lg font-extrabold tracking-tight text-[#111827] font-display">
+            Wealthio
+          </span>
+        </div>
+
+        <motion.div 
+          className="w-full max-w-[440px] bg-white rounded-3xl p-8 border border-[#E5E7EB] shadow-premium hover:shadow-premium-hover transition-all duration-300"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+        >
+          <div className="flex flex-col gap-2 mb-6">
+            <h2 className="font-display text-2xl font-bold text-[#111827]">Create Account</h2>
+            <p className="text-sm font-medium text-[#6B7280]">Enter your details to create an account.</p>
+          </div>
+
+          {apiError && (
+            <motion.div 
+              className="bg-red-50 border border-red-200 text-red-700 text-xs px-4 py-3 rounded-2xl mb-6 font-medium"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              {apiError}
+            </motion.div>
+          )}
+
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit} id="registerForm">
+            {/* Full Name */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-[#111827] uppercase tracking-wider font-mono" htmlFor="fullName">
+                Full Name
+              </label>
+              <div className="relative group">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF] group-focus-within:text-primary transition-colors">
+                  <User className="h-4.5 w-4.5" />
+                </span>
+                <input
+                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl py-3 pl-11 pr-4 text-[#111827] text-sm font-medium placeholder-[#9CA3AF] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                  id="fullName"
+                  placeholder="John Doe"
+                  type="text"
+                  value={form.fullName}
+                  onChange={set("fullName")}
+                />
+              </div>
+              {errors.fullName && <p className="text-red-500 text-xs font-semibold">{errors.fullName}</p>}
+            </div>
+
+            {/* Email Field */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-[#111827] uppercase tracking-wider font-mono" htmlFor="email">
+                Email Address
+              </label>
+              <div className="relative group">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF] group-focus-within:text-primary transition-colors">
+                  <Mail className="h-4.5 w-4.5" />
+                </span>
+                <input
+                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl py-3 pl-11 pr-4 text-[#111827] text-sm font-medium placeholder-[#9CA3AF] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                  id="email"
+                  placeholder="name@example.com"
+                  type="email"
+                  value={form.email}
+                  onChange={set("email")}
+                />
+              </div>
+              {errors.email && <p className="text-red-500 text-xs font-semibold">{errors.email}</p>}
+            </div>
+
+            {/* Password Field */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-[#111827] uppercase tracking-wider font-mono" htmlFor="password">
+                Password
+              </label>
+              <div className="relative group">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF] group-focus-within:text-primary transition-colors">
+                  <Lock className="h-4.5 w-4.5" />
+                </span>
+                <input
+                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl py-3 pl-11 pr-4 text-[#111827] text-sm font-medium placeholder-[#9CA3AF] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                  id="password"
+                  placeholder="Min. 6 characters"
+                  type="password"
+                  value={form.password}
+                  onChange={set("password")}
+                />
+              </div>
+              {errors.password && <p className="text-red-500 text-xs font-semibold">{errors.password}</p>}
+            </div>
+
+            {/* Confirm Password Field */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-[#111827] uppercase tracking-wider font-mono" htmlFor="confirmPassword">
+                Confirm Password
+              </label>
+              <div className="relative group">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF] group-focus-within:text-primary transition-colors">
+                  <Lock className="h-4.5 w-4.5" />
+                </span>
+                <input
+                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl py-3 pl-11 pr-4 text-[#111827] text-sm font-medium placeholder-[#9CA3AF] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                  id="confirmPassword"
+                  placeholder="••••••••"
+                  type="password"
+                  value={form.confirmPassword}
+                  onChange={set("confirmPassword")}
+                />
+              </div>
+              {errors.confirmPassword && <p className="text-red-500 text-xs font-semibold">{errors.confirmPassword}</p>}
+            </div>
+
+            {/* Submit */}
+            <button
+              className="mt-4 w-full bg-primary text-white py-3 px-4 rounded-xl font-bold text-sm tracking-wide transition-all duration-200 hover:bg-opacity-95 hover:shadow-md active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  <span>Registering...</span>
+                </>
+              ) : (
+                <>
+                  <span>Create Account</span>
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="text-center mt-6 pt-6 border-t border-[#E5E7EB]">
+            <p className="text-sm font-medium text-[#6B7280]">
+              Already have an account?{" "}
+              <Link className="text-secondary hover:text-primary font-bold transition-colors" to="/login">
+                Sign In
+              </Link>
+            </p>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

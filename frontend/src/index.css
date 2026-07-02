@@ -1,72 +1,56 @@
 @import "tailwindcss";
 
 /* ──────────────────────────────────────────────────────────────────
-   Wealthio Design System — extracted from Stitch screens
+   Wealthio Design System — Premium Light Theme
    ────────────────────────────────────────────────────────────────── */
 
 @theme {
-  /* ── Color Palette (Material 3 tokens) ── */
-  --color-surface-container-highest: #e0e3e5;
-  --color-inverse-on-surface: #eff1f3;
-  --color-on-tertiary-fixed-variant: #005236;
-  --color-on-tertiary-fixed: #002113;
-  --color-surface-container-high: #e6e8ea;
-  --color-surface-bright: #f7f9fb;
-  --color-on-tertiary-container: #009668;
-  --color-tertiary-fixed-dim: #4edea3;
-  --color-surface-tint: #565e74;
-  --color-on-secondary: #ffffff;
-  --color-inverse-primary: #bec6e0;
-  --color-secondary-container: #316bf3;
-  --color-on-primary: #ffffff;
-  --color-tertiary-fixed: #6ffbbe;
-  --color-on-primary-container: #7c839b;
-  --color-on-secondary-fixed-variant: #003ea8;
-  --color-primary-fixed: #dae2fd;
-  --color-outline-variant: #c6c6cd;
-  --color-primary: #000000;
-  --color-on-surface: #191c1e;
-  --color-on-error-container: #93000a;
-  --color-on-primary-fixed: #131b2e;
-  --color-primary-fixed-dim: #bec6e0;
-  --color-surface-container-low: #f2f4f6;
-  --color-on-tertiary: #ffffff;
-  --color-on-error: #ffffff;
-  --color-on-surface-variant: #45464d;
-  --color-on-secondary-fixed: #00174b;
-  --color-tertiary-container: #002113;
-  --color-error-container: #ffdad6;
-  --color-on-primary-fixed-variant: #3f465c;
-  --color-surface-container-lowest: #ffffff;
-  --color-secondary-fixed-dim: #b4c5ff;
-  --color-secondary: #0051d5;
-  --color-secondary-fixed: #dbe1ff;
-  --color-surface: #f7f9fb;
-  --color-background: #f7f9fb;
-  --color-surface-container: #eceef0;
-  --color-on-secondary-container: #fefcff;
-  --color-surface-dim: #d8dadc;
-  --color-inverse-surface: #2d3133;
-  --color-error: #ba1a1a;
-  --color-primary-container: #131b2e;
-  --color-outline: #76777d;
-  --color-surface-variant: #e0e3e5;
-  --color-on-background: #191c1e;
-  --color-tertiary: #000000;
+  /* ── Color Palette (Fintech Premium tokens) ── */
+  --color-primary: #4F46E5;
+  --color-secondary: #7C3AED;
+  --color-background: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-on-surface: #111827;
+  --color-on-surface-variant: #6B7280;
+  --color-on-background: #111827;
+  --color-outline-variant: #E5E7EB;
+  --color-outline: #9CA3AF;
+  
+  --color-surface-container-lowest: #FFFFFF;
+  --color-surface-container-low: #F1F5F9;
+  --color-surface-container: #E2E8F0;
+  --color-surface-container-high: #CBD5E1;
+  --color-surface-container-highest: #94A3B8;
+  --color-surface-bright: #FFFFFF;
+  --color-surface-dim: #E2E8F0;
+  
+  --color-inverse-surface: #0F172A;
+  --color-inverse-on-surface: #F8FAFC;
+  
+  --color-tertiary: #10B981;
+  --color-tertiary-container: #D1FAE5;
+  --color-on-tertiary-container: #065F46;
+  
+  --color-error: #EF4444;
+  --color-error-container: #FEE2E2;
+  --color-on-error-container: #991B1B;
+  
+  --color-primary-container: #EEF2F6;
+  --color-on-primary-container: #334155;
 
   /* ── Typography ── */
-  --font-display: "Hanken Grotesk", sans-serif;
+  --font-display: "Sora", sans-serif;
   --font-body: "Inter", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
   --font-body-sm: "Inter", sans-serif;
   --font-label-sm: "JetBrains Mono", monospace;
-  --font-display-lg: "Hanken Grotesk", sans-serif;
+  --font-display-lg: "Sora", sans-serif;
   --font-label-md: "JetBrains Mono", monospace;
   --font-body-md: "Inter", sans-serif;
   --font-body-lg: "Inter", sans-serif;
-  --font-headline-md: "Hanken Grotesk", sans-serif;
-  --font-headline-lg: "Hanken Grotesk", sans-serif;
+  --font-headline-md: "Sora", sans-serif;
+  --font-headline-lg: "Sora", sans-serif;
 
   --font-size-body-sm: 14px;
   --font-size-body-sm--line-height: 20px;
@@ -146,6 +130,38 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ── Custom Utilities ── */
+.shadow-premium {
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
+}
+
+.shadow-premium-hover {
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+}
+
+/* Smooth custom scrollbars for horizontal carousels */
+.scrollbar-none {
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--color-surface-container);
+  border-radius: 9999px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--color-surface-container-high);
+}
+
 /* ── Input styling overrides ── */
 input:focus,
 select:focus {
@@ -169,7 +185,7 @@ select {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23191c1e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234b5563' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: right 12px center;
   background-size: 16px;
@@ -194,8 +210,8 @@ select {
   content: "";
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background-image: radial-gradient(circle at 80% 20%, rgba(78, 222, 163, 0.05) 0%, transparent 40%),
-                    radial-gradient(circle at 20% 80%, rgba(192, 193, 255, 0.05) 0%, transparent 40%);
+  background-image: radial-gradient(circle at 80% 20%, rgba(79, 70, 229, 0.08) 0%, transparent 40%),
+                    radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 40%);
   z-index: 0;
 }
 
@@ -205,7 +221,7 @@ select {
   right: -10%;
   width: 120%;
   height: 60%;
-  background: radial-gradient(ellipse at center, transparent 40%, rgba(78, 222, 163, 0.02) 41%, rgba(78, 222, 163, 0.08) 45%, transparent 46%);
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(79, 70, 229, 0.02) 41%, rgba(79, 70, 229, 0.08) 45%, transparent 46%);
   border-radius: 50%;
   transform: rotate(-15deg);
   z-index: 1;
@@ -217,15 +233,15 @@ select {
   left: 10%;
   width: 80%;
   height: 80%;
-  background: radial-gradient(ellipse at center, transparent 40%, rgba(192, 193, 255, 0.02) 41%, rgba(192, 193, 255, 0.05) 45%, transparent 46%);
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(16, 185, 129, 0.02) 41%, rgba(16, 185, 129, 0.05) 45%, transparent 46%);
   border-radius: 50%;
   transform: rotate(5deg);
 }
 
 /* Geometric grid overlay for login panel */
 .geometric-bg {
-  background-image: radial-gradient(circle at 15% 50%, rgba(78, 222, 163, 0.05), transparent 25%),
-                    radial-gradient(circle at 85% 30%, rgba(49, 107, 243, 0.05), transparent 25%);
+  background-image: radial-gradient(circle at 15% 50%, rgba(79, 70, 229, 0.06), transparent 25%),
+                    radial-gradient(circle at 85% 30%, rgba(124, 58, 237, 0.06), transparent 25%);
 }
 
 /* ── Risk card selection ── */
@@ -234,7 +250,7 @@ select {
 }
 .risk-card.selected {
   border-color: var(--color-primary) !important;
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: rgba(79, 70, 229, 0.04);
 }
 .risk-card.selected .icon-container {
   color: var(--color-primary);

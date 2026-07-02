@@ -1,5 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  User, 
+  Calendar, 
+  Target, 
+  TrendingUp, 
+  DollarSign, 
+  Wallet, 
+  Compass, 
+  ArrowLeft, 
+  ArrowRight, 
+  ShieldCheck, 
+  CheckCircle,
+  HelpCircle
+} from "lucide-react";
 import useAuth from "../context/useAuth";
 import { saveProfile } from "../api/profileApi";
 import { predictRisk } from "../api/riskApi";
@@ -7,6 +22,13 @@ import { formatNumberWithCommas, getNumericValue, numberToWords } from "../utils
 
 const RISK_OPTIONS = ["Conservative", "Moderate", "Aggressive", "Very Aggressive"];
 const EXPECTED_RETURN_OPTIONS = ["10%-20%", "20%-30%", "30%-40%"];
+
+const RISK_META = {
+  Conservative: { label: "Conservative", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  Moderate: { label: "Moderate", color: "bg-amber-50 text-amber-700 border-amber-200" },
+  Aggressive: { label: "Aggressive", color: "bg-rose-50 text-rose-700 border-rose-200" },
+  "Very Aggressive": { label: "Very Aggressive", color: "bg-red-50 text-red-700 border-red-200" },
+};
 
 export default function Onboarding() {
   const { user } = useAuth();
@@ -41,9 +63,7 @@ export default function Onboarding() {
   const setField = (field) => (e) => {
     let value = e.target.value;
 
-    // For money inputs, format with commas
     if (['monthlyIncome', 'monthlySavings', 'monthlyExpenses', 'lifetimeSavings'].includes(field)) {
-      // Get numeric value and format it
       const numericValue = getNumericValue(value);
       value = formatNumberWithCommas(numericValue);
     }
@@ -51,7 +71,6 @@ export default function Onboarding() {
     setForm((p) => {
       const updated = { ...p, [field]: value };
 
-      // Auto-calculate monthly expenses when income or savings change
       if (field === 'monthlyIncome' || field === 'monthlySavings') {
         const income = getNumericValue(updated.monthlyIncome);
         const savings = getNumericValue(updated.monthlySavings);
@@ -117,7 +136,7 @@ export default function Onboarding() {
     try {
       const payload = {
         age: Number(form.age),
-        investment_duration: form.horizon === "" ? "Less than 1 year" : (form.horizon <= 1 ? "Less than 1 year" : form.horizon <= 3 ? "1-3 years" : form.horizon <= 5 ? "3-5 years" : "More than 5 years"),
+        investment_duration: form.horizon === "" ? "Less than 1 year" : (Number(form.horizon) <= 1 ? "Less than 1 year" : Number(form.horizon) <= 3 ? "1-3 years" : Number(form.horizon) <= 5 ? "3-5 years" : "More than 5 years"),
         expected_return: form.expected_return,
         equity_preference: Number(form.equity_preference),
         fixed_deposit_preference: Number(form.fixed_deposit_preference),
@@ -156,241 +175,343 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="bg-background text-on-background min-h-screen flex flex-col justify-center items-center py-margin-desktop custom-scrollbar">
-      <main className="w-full max-w-[560px] px-margin-mobile md:px-0 mx-auto flex flex-col gap-margin-desktop">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#111827] font-body flex flex-col items-center justify-center py-10 antialiased overflow-x-hidden">
+      <main className="w-full max-w-[580px] px-6 flex flex-col gap-8">
         
-        {step === 1 && (
-          <>
-            <header className="flex flex-col items-center gap-base text-center">
-              <img alt="Wealthio Logo" className="h-12 w-auto object-contain" src="/wealthio-logo.svg" />
-              <h1 className="font-headline-lg text-headline-lg text-on-surface">Basic Info</h1>
-              <p className="font-body-md text-body-md text-on-surface-variant">Help us tailor your investment strategy.</p>
-            </header>
-            
-            <div className="flex items-center justify-between gap-2 px-4">
-              <div className="flex-1 flex flex-col gap-2">
-                <div className="h-1 w-full bg-secondary rounded-full"></div>
-                <span className="font-label-sm text-label-sm text-secondary uppercase">Step 1</span>
+        {/* Step Indicator Header */}
+        <div className="bg-white rounded-3xl p-6 border border-[#E5E7EB] shadow-premium flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-primary/10 p-2.5 rounded-xl text-primary flex items-center justify-center">
+              <TrendingUp className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="font-display font-bold text-sm text-[#111827]">Risk Profiling</h4>
+              <p className="text-xs text-[#6B7280]">Tailoring your optimize portfolio</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 font-mono text-xs">
+            <span className={`h-6 w-6 rounded-full flex items-center justify-center font-bold transition-all ${step >= 1 ? "bg-primary text-white" : "bg-[#F1F5F9] text-[#6B7280]"}`}>1</span>
+            <div className={`h-0.5 w-6 rounded ${step >= 2 ? "bg-primary" : "bg-[#E2E8F0]"}`} />
+            <span className={`h-6 w-6 rounded-full flex items-center justify-center font-bold transition-all ${step >= 2 ? "bg-primary text-white" : "bg-[#F1F5F9] text-[#6B7280]"}`}>2</span>
+            <div className={`h-0.5 w-6 rounded ${step >= 3 ? "bg-primary" : "bg-[#E2E8F0]"}`} />
+            <span className={`h-6 w-6 rounded-full flex items-center justify-center font-bold transition-all ${step >= 3 ? "bg-primary text-white" : "bg-[#F1F5F9] text-[#6B7280]"}`}>3</span>
+          </div>
+        </div>
+
+        {/* Step 1: Basic Info */}
+        <AnimatePresence mode="wait">
+          {step === 1 && (
+            <motion.div
+              key="step1"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white border border-[#E5E7EB] rounded-3xl p-8 shadow-premium flex flex-col gap-6"
+            >
+              <div>
+                <h2 className="font-display text-xl font-bold text-[#111827]">Tell us about yourself</h2>
+                <p className="text-sm font-medium text-[#6B7280] mt-1">This context helps us model appropriate volatility boundaries.</p>
               </div>
-              <div className="flex-1 flex flex-col gap-2 opacity-30">
-                <div className="h-1 w-full bg-surface-variant rounded-full"></div>
-                <span className="font-label-sm text-label-sm text-on-surface-variant uppercase hidden md:block">Step 2</span>
-              </div>
-              <div className="flex-1 flex flex-col gap-2 opacity-30">
-                <div className="h-1 w-full bg-surface-variant rounded-full"></div>
-                <span className="font-label-sm text-label-sm text-on-surface-variant uppercase hidden md:block">Step 3</span>
-              </div>
-            </div>
 
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 md:p-8 shadow-sm">
-              <form className="flex flex-col gap-gutter" onSubmit={(e) => { e.preventDefault(); handleNext(); }}>
-                <div className="flex flex-col gap-2">
-                  <label className="font-label-sm text-label-sm text-on-surface uppercase" htmlFor="age">Age</label>
-                  <div className="relative">
-                    <input className="w-full bg-surface-container border border-outline rounded-md px-4 py-3 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors placeholder:text-on-surface-variant/70" id="age" name="age" placeholder="e.g. 30" type="number" value={form.age} onChange={setField("age")} />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline pointer-events-none">person</span>
-                  </div>
-                  {errors.age && <p className="text-error text-xs">{errors.age}</p>}
-                </div>
-                
-                <div className="flex flex-col gap-2">
-                  <label className="font-label-sm text-label-sm text-on-surface uppercase" htmlFor="goal">Investment Goal</label>
-                  <select className="w-full bg-surface-container border border-outline rounded-md px-4 py-3 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors pr-10 cursor-pointer" id="goal" name="goal" value={form.goal} onChange={setField("goal")}>
-                    <option disabled value="">Select a goal</option>
-                    <option value="retirement">Retirement</option>
-                    <option value="wealth_growth">Wealth Growth</option>
-                    <option value="short_term">Short Term</option>
-                    <option value="education">Education</option>
-                  </select>
-                  {errors.goal && <p className="text-error text-xs">{errors.goal}</p>}
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="font-label-sm text-label-sm text-on-surface uppercase" htmlFor="horizon">Investment Horizon (Years)</label>
-                  <div className="relative">
-                    <input className="w-full bg-surface-container border border-outline rounded-md px-4 py-3 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors placeholder:text-on-surface-variant/70" id="horizon" name="horizon" placeholder="e.g. 10" type="number" value={form.horizon} onChange={setField("horizon")} />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline pointer-events-none">timeline</span>
-                  </div>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">How long do you plan to stay invested?</p>
-                  {errors.horizon && <p className="text-error text-xs">{errors.horizon}</p>}
-                </div>
-              </form>
-            </div>
-            
-            <div className="flex items-center gap-4 mt-4">
-              <button className="flex-1 bg-transparent border border-outline text-on-surface font-label-md text-label-md py-3 rounded-md opacity-50 cursor-not-allowed transition-colors" disabled type="button">Back</button>
-              <button className="flex-1 bg-primary hover:bg-on-surface-variant text-on-primary font-label-md text-label-md py-3 rounded-md transition-all duration-200 active:scale-95 flex items-center justify-center gap-2" type="button" onClick={handleNext}>Next</button>
-            </div>
-          </>
-        )}
-
-        {step === 2 && (
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-margin-desktop shadow-sm">
-            <div className="flex gap-base mb-margin-desktop">
-              <div aria-label="Step 1 completed" className="flex-1 h-1 bg-primary opacity-50 rounded-full"></div>
-              <div aria-label="Step 2 active" className="flex-1 h-1 bg-primary rounded-full shadow-sm"></div>
-              <div aria-label="Step 3 pending" className="flex-1 h-1 bg-surface-variant rounded-full"></div>
-              <div aria-label="Step 4 pending" className="flex-1 h-1 bg-surface-variant rounded-full"></div>
-            </div>
-
-            <header className="mb-margin-desktop">
-              <h1 className="font-headline-lg text-headline-lg text-on-surface">Financial Info</h1>
-              <p className="font-body-md text-body-md text-on-surface-variant mt-2">Let's understand your monthly cash flow to tailor your strategy.</p>
-            </header>
-
-            <form className="flex flex-col gap-gutter" onSubmit={(e) => { e.preventDefault(); handleNext(); }}>
-              {[
-                { id: "monthlyIncome", label: "Monthly Income" },
-                { id: "monthlySavings", label: "Monthly Savings" },
-                { id: "monthlyExpenses", label: "Monthly Expenses", readOnly: true },
-                { id: "lifetimeSavings", label: "Lifetime Savings" }
-              ].map((field) => (
-                <div key={field.id} className="flex flex-col gap-2">
-                  <label className="font-label-sm text-label-sm text-on-surface uppercase pl-1" htmlFor={field.id}>{field.label}</label>
-                  <div className="relative premium-focus transition-shadow duration-200 rounded-lg">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface font-body-md font-semibold select-none">₹</span>
-                    <input
-                      className={`w-full bg-surface border border-outline-variant rounded-lg py-3 pl-8 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-colors ${field.readOnly ? 'opacity-75 cursor-not-allowed' : ''}`}
-                      id={field.id}
-                      name={field.id}
-                      placeholder="0.00"
-                      type="text"
-                      value={form[field.id]}
-                      onChange={setField(field.id)}
-                      readOnly={field.readOnly}
+              <div className="flex flex-col gap-5">
+                {/* Age Input */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[#111827] uppercase tracking-wider font-mono" htmlFor="age">Age</label>
+                  <div className="relative group">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF] group-focus-within:text-primary transition-colors">
+                      <Calendar className="h-4.5 w-4.5" />
+                    </span>
+                    <input 
+                      className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl py-3 pl-11 pr-4 text-[#111827] text-sm font-medium placeholder-[#9CA3AF] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors" 
+                      id="age" 
+                      name="age" 
+                      placeholder="e.g. 30" 
+                      type="number" 
+                      value={form.age} 
+                      onChange={setField("age")} 
                     />
                   </div>
-                  {/* Display number in words */}
-                  {form[field.id] && (
-                    <p className="text-on-surface-variant text-xs pl-1 italic">
-                      {numberToWords(getNumericValue(form[field.id]))}
-                    </p>
-                  )}
-                  {errors[field.id] && <p className="text-error text-xs pl-1">{errors[field.id]}</p>}
+                  {errors.age && <p className="text-red-500 text-xs font-semibold">{errors.age}</p>}
                 </div>
-              ))}
+                
+                {/* Goal Selection */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[#111827] uppercase tracking-wider font-mono" htmlFor="goal">Primary Investment Goal</label>
+                  <div className="relative group">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF] group-focus-within:text-primary transition-colors pointer-events-none">
+                      <Target className="h-4.5 w-4.5" />
+                    </span>
+                    <select 
+                      className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl py-3 pl-11 pr-10 text-[#111827] text-sm font-medium focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors cursor-pointer" 
+                      id="goal" 
+                      name="goal" 
+                      value={form.goal} 
+                      onChange={setField("goal")}
+                    >
+                      <option disabled value="">Select a goal</option>
+                      <option value="retirement">Retirement Planning</option>
+                      <option value="wealth_growth">Long-term Wealth Growth</option>
+                      <option value="short_term">Short-term Safety Buffer</option>
+                      <option value="education">Higher Education Fund</option>
+                    </select>
+                  </div>
+                  {errors.goal && <p className="text-red-500 text-xs font-semibold">{errors.goal}</p>}
+                </div>
 
-              <div className="flex items-center justify-between mt-gutter pt-gutter border-t border-outline-variant/50">
-                <button className="group flex items-center gap-2 px-6 py-3 rounded-lg border border-primary/30 text-primary font-label-md text-label-md hover:bg-primary/5 hover:border-primary transition-all duration-200 active:scale-95" type="button" onClick={handleBack}>
-                  <span className="material-symbols-outlined text-[20px] transition-transform group-hover:-translate-x-1">arrow_back</span>
-                  Back
-                </button>
-                <button className="relative overflow-hidden flex items-center justify-center min-w-[120px] px-6 py-3 rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:bg-primary/90 transition-all duration-200 active:scale-95" type="submit">
-                  <span className="flex items-center gap-2 transition-opacity duration-200">
-                    Next
-                    <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
-                  </span>
+                {/* Horizon Input */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[#111827] uppercase tracking-wider font-mono" htmlFor="horizon">Investment Horizon (Years)</label>
+                  <div className="relative group">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF] group-focus-within:text-primary transition-colors">
+                      <Compass className="h-4.5 w-4.5" />
+                    </span>
+                    <input 
+                      className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl py-3 pl-11 pr-4 text-[#111827] text-sm font-medium placeholder-[#9CA3AF] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors" 
+                      id="horizon" 
+                      name="horizon" 
+                      placeholder="e.g. 10" 
+                      type="number" 
+                      value={form.horizon} 
+                      onChange={setField("horizon")} 
+                    />
+                  </div>
+                  {errors.horizon && <p className="text-red-500 text-xs font-semibold">{errors.horizon}</p>}
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4 mt-4 pt-6 border-t border-[#E5E7EB]">
+                <button className="flex-1 px-5 py-3 rounded-xl border border-[#E5E7EB] text-xs font-bold text-[#6B7280] opacity-50 cursor-not-allowed" disabled type="button">Back</button>
+                <button className="flex-1 bg-primary text-white px-5 py-3 rounded-xl text-xs font-bold hover:bg-opacity-95 flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95 transition-all" type="button" onClick={handleNext}>
+                  <span>Next Step</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </div>
-            </form>
-          </div>
-        )}
+            </motion.div>
+          )}
 
-        {step === 3 && recommendationStage === "idle" && (
-          <div className="w-full max-w-[560px] mx-auto flex flex-col gap-8">
-            <header className="flex flex-col gap-2 text-center">
-              <div className="flex gap-1 mb-4 justify-center w-full max-w-xs mx-auto">
-                <div className="h-1 flex-1 bg-surface-variant rounded-full opacity-50"></div>
-                <div className="h-1 flex-1 bg-surface-variant rounded-full opacity-50"></div>
-                <div className="h-1 flex-1 bg-primary rounded-full"></div>
+          {/* Step 2: Financial Info */}
+          {step === 2 && (
+            <motion.div
+              key="step2"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white border border-[#E5E7EB] rounded-3xl p-8 shadow-premium flex flex-col gap-6"
+            >
+              <div>
+                <h2 className="font-display text-xl font-bold text-[#111827]">Financial Cash Flow</h2>
+                <p className="text-sm font-medium text-[#6B7280] mt-1">Determine your investable capacity and monthly buffers.</p>
               </div>
-              <h1 className="font-headline-lg text-headline-lg text-on-surface">Investment Preferences</h1>
-              <p className="font-body-md text-body-md text-on-surface-variant">Tell us your preferred allocation style so we can recommend the best risk profile.</p>
-            </header>
-            
-            {recommendationError && (
-              <div className="bg-error-container text-on-error-container text-sm px-4 py-3 rounded-lg">{recommendationError}</div>
-            )}
 
-            <div className="flex flex-col gap-2 mb-2">
-              <label className="font-label-sm text-label-sm text-on-surface uppercase" htmlFor="expected_return">Expected Return</label>
-              <select
-                id="expected_return"
-                className="w-full bg-surface-container border border-outline rounded-md px-4 py-3 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors cursor-pointer"
-                value={form.expected_return}
-                onChange={(e) => setForm((p) => ({ ...p, expected_return: e.target.value }))}
-              >
-                {EXPECTED_RETURN_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
-              <p className="font-body-sm text-body-sm text-on-surface-variant">What annual returns do you expect from your investments?</p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-              {[
-                { id: "equity_preference", label: "Equity Preference" },
-                { id: "fixed_deposit_preference", label: "Fixed Deposit Preference" },
-                { id: "ppf_preference", label: "PPF Preference" },
-                { id: "gold_preference", label: "Gold Preference" },
-              ].map((item) => (
-                <div key={item.id} className="flex flex-col gap-2">
-                  <label className="font-label-sm text-label-sm text-on-surface uppercase" htmlFor={item.id}>{item.label}</label>
-                  <input
-                    id={item.id}
-                    type="range"
-                    min="1"
-                    max="7"
-                    value={form[item.id]}
-                    onChange={(e) => setForm((p) => ({ ...p, [item.id]: Number(e.target.value) }))}
-                    className="w-full"
-                  />
-                  <div className="text-body-sm text-on-surface-variant">{form[item.id]}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-outline-variant/30">
-              <button className="px-6 py-3 rounded-lg border border-outline-variant/50 text-on-surface-variant hover:text-on-surface hover:border-outline-variant transition-colors font-label-md text-label-md bg-transparent" onClick={handleBack} type="button">Back</button>
-              <button className="px-8 py-3 rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:bg-on-surface transition-all active:scale-95 flex items-center justify-center min-w-[180px]" onClick={handleSubmit} disabled={loading} type="button">
-                {loading ? (
-                  <span className="material-symbols-outlined animate-spin" style={{fontSize: '24px'}}>progress_activity</span>
-                ) : (
-                  <span className="btn-text">Get Recommendation</span>
-                )}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 3 && recommendationStage !== "idle" && (
-          <div className="w-full max-w-[560px] mx-auto flex flex-col gap-8">
-            <header className="flex flex-col gap-2 text-center">
-              <h1 className="font-headline-lg text-headline-lg text-on-surface">Recommended Risk Profile</h1>
-              <p className="font-body-md text-body-md text-on-surface-variant">Based on your answers, here is the recommended profile from our AI engine.</p>
-            </header>
-
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6">
-              <div className="text-sm text-on-surface-variant">Recommended Risk Profile</div>
-              <div className="font-headline-lg text-headline-lg mt-2">{recommendedRisk}</div>
-              <p className="mt-4 text-body-md text-on-surface-variant">{predictionExplanation}</p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button onClick={() => handleConfirmSelection(recommendedRisk)} className="flex-1 px-6 py-3 bg-primary text-on-primary rounded-md">Accept Recommendation</button>
-              <button onClick={() => setRecommendationStage("choose-profile")} className="flex-1 px-6 py-3 border border-outline-variant rounded-md">Change Profile</button>
-            </div>
-
-            {recommendationStage === "choose-profile" && (
-              <div className="grid grid-cols-1 gap-4 mt-4">
-                {RISK_OPTIONS.map((risk) => (
-                  <button
-                    key={risk}
-                    type="button"
-                    onClick={() => setSelectedRisk(risk)}
-                    className={`w-full text-left p-4 rounded-xl border ${selectedRisk === risk ? 'border-primary bg-primary/10' : 'border-outline-variant bg-surface-container-low'} transition-colors`}
-                  >
-                    <div className="font-headline-sm mb-1">{risk}</div>
-                    <p className="text-body-sm text-on-surface-variant">{risk === 'Very Aggressive' ? 'Highest growth orientation with more portfolio volatility.' : risk === 'Aggressive' ? 'Higher growth potential with increased volatility.' : risk === 'Moderate' ? 'Balanced growth with managed risk.' : 'Preservation-first with conservative positioning.'}</p>
-                  </button>
+              <div className="flex flex-col gap-5">
+                {[
+                  { id: "monthlyIncome", label: "Monthly Income", icon: <DollarSign className="h-4.5 w-4.5" /> },
+                  { id: "monthlySavings", label: "Monthly Savings", icon: <Wallet className="h-4.5 w-4.5" /> },
+                  { id: "monthlyExpenses", label: "Monthly Expenses (Calculated)", icon: <Wallet className="h-4.5 w-4.5" />, readOnly: true },
+                  { id: "lifetimeSavings", label: "Lifetime Savings", icon: <DollarSign className="h-4.5 w-4.5" /> }
+                ].map((field) => (
+                  <div key={field.id} className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-[#111827] uppercase tracking-wider font-mono pl-1" htmlFor={field.id}>{field.label}</label>
+                    <div className="relative group">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#111827] font-mono text-sm font-extrabold select-none">₹</span>
+                      <input
+                        className={`w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl py-3 pl-8 pr-4 text-[#111827] text-sm font-semibold placeholder-[#9CA3AF] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all ${field.readOnly ? 'bg-[#F1F5F9]/70 cursor-not-allowed text-[#6B7280]' : ''}`}
+                        id={field.id}
+                        name={field.id}
+                        placeholder="0.00"
+                        type="text"
+                        value={form[field.id]}
+                        onChange={setField(field.id)}
+                        readOnly={field.readOnly}
+                      />
+                    </div>
+                    {form[field.id] && (
+                      <p className="text-[#6B7280] text-[10px] pl-1 font-mono uppercase font-bold italic">
+                        {numberToWords(getNumericValue(form[field.id]))}
+                      </p>
+                    )}
+                    {errors[field.id] && <p className="text-red-500 text-xs pl-1 font-semibold">{errors[field.id]}</p>}
+                  </div>
                 ))}
-                <button onClick={() => handleConfirmSelection(selectedRisk)} className="px-6 py-3 bg-primary text-on-primary rounded-md">Confirm Selected Profile</button>
               </div>
-            )}
 
-            {savingProfile && (
-              <div className="text-on-surface-variant text-sm mt-4">Saving your profile...</div>
-            )}
-          </div>
-        )}
+              <div className="flex items-center gap-4 mt-4 pt-6 border-t border-[#E5E7EB]">
+                <button className="flex-1 px-5 py-3 rounded-xl border border-[#E5E7EB] text-xs font-bold text-[#111827] hover:bg-[#F8FAFC] flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all" type="button" onClick={handleBack}>
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  <span>Back</span>
+                </button>
+                <button className="flex-1 bg-primary text-white px-5 py-3 rounded-xl text-xs font-bold hover:bg-opacity-95 flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95 transition-all" type="button" onClick={handleNext}>
+                  <span>Next Step</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 3: Preferences */}
+          {step === 3 && recommendationStage === "idle" && (
+            <motion.div
+              key="step3-preferences"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white border border-[#E5E7EB] rounded-3xl p-8 shadow-premium flex flex-col gap-6"
+            >
+              <div>
+                <h2 className="font-display text-xl font-bold text-[#111827]">Investment Preferences</h2>
+                <p className="text-sm font-medium text-[#6B7280] mt-1">Refine asset class weights and adjust risk constraints.</p>
+              </div>
+              
+              {recommendationError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-4 py-3 rounded-2xl font-medium">{recommendationError}</div>
+              )}
+
+              <div className="flex flex-col gap-5">
+                {/* Expected Return Selection */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[#111827] uppercase tracking-wider font-mono" htmlFor="expected_return">Expected Return Range</label>
+                  <select
+                    id="expected_return"
+                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl py-3 px-4 text-[#111827] text-sm font-medium focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors cursor-pointer"
+                    value={form.expected_return}
+                    onChange={(e) => setForm((p) => ({ ...p, expected_return: e.target.value }))}
+                  >
+                    {EXPECTED_RETURN_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+
+                {/* Preference Range Sliders */}
+                <div className="flex flex-col gap-4 border-t border-[#E5E7EB] pt-4">
+                  {[
+                    { id: "equity_preference", label: "Equity Preference", desc: "Growth orientation" },
+                    { id: "fixed_deposit_preference", label: "Fixed Deposit Preference", desc: "Capital preservation" },
+                    { id: "ppf_preference", label: "PPF Preference", desc: "Long-term guaranteed safety" },
+                    { id: "gold_preference", label: "Gold Preference", desc: "Inflation hedge" },
+                  ].map((item) => (
+                    <div key={item.id} className="flex flex-col gap-1.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-bold text-[#111827]">{item.label}</span>
+                        <span className="font-mono font-extrabold bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[10px]">
+                          Score: {form[item.id]} / 7
+                        </span>
+                      </div>
+                      <input
+                        id={item.id}
+                        type="range"
+                        min="1"
+                        max="7"
+                        value={form[item.id]}
+                        onChange={(e) => setForm((p) => ({ ...p, [item.id]: Number(e.target.value) }))}
+                        className="w-full h-1.5 bg-[#E2E8F0] rounded-lg appearance-none cursor-pointer accent-primary"
+                      />
+                      <span className="text-[10px] text-[#6B7280] font-medium">{item.desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 mt-4 pt-6 border-t border-[#E5E7EB]">
+                <button className="flex-1 px-5 py-3 rounded-xl border border-[#E5E7EB] text-xs font-bold text-[#111827] hover:bg-[#F8FAFC] flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all" type="button" onClick={handleBack}>
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  <span>Back</span>
+                </button>
+                <button className="flex-1 bg-primary text-white px-5 py-3 rounded-xl text-xs font-bold hover:bg-opacity-95 flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95 transition-all" onClick={handleSubmit} disabled={loading} type="button">
+                  {loading ? (
+                    <>
+                      <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                      <span>Optimizing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Get Recommendations</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 3: Recommendation Stage */}
+          {step === 3 && recommendationStage !== "idle" && (
+            <motion.div
+              key="step3-results"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white border border-[#E5E7EB] rounded-3xl p-8 shadow-premium flex flex-col gap-6"
+            >
+              <div>
+                <h2 className="font-display text-xl font-bold text-[#111827]">Recommended Risk Profile</h2>
+                <p className="text-sm font-medium text-[#6B7280] mt-1">Optimized classification from our machine learning model.</p>
+              </div>
+
+              <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl p-6 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#6B7280] uppercase tracking-wider font-mono">Suggested Risk Appetite</span>
+                  <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${RISK_META[recommendedRisk]?.color || "bg-slate-50 text-slate-700 border-slate-200"}`}>
+                    <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                    {recommendedRisk}
+                  </span>
+                </div>
+                
+                <p className="text-xs text-[#6B7280] font-medium leading-relaxed bg-white border border-[#E5E7EB] p-4 rounded-xl">
+                  {predictionExplanation || "The optimization engine calculated this risk rating based on your assets preference, expected return objectives, and duration constraints."}
+                </p>
+              </div>
+
+              {recommendationStage === "recommendation" && (
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button onClick={() => handleConfirmSelection(recommendedRisk)} className="flex-1 px-5 py-3 bg-primary text-white rounded-xl text-xs font-bold hover:bg-opacity-95 shadow-sm transition-all cursor-pointer active:scale-95">Accept Recommendation</button>
+                  <button onClick={() => setRecommendationStage("choose-profile")} className="flex-1 px-5 py-3 border border-[#E5E7EB] bg-white text-[#111827] rounded-xl text-xs font-bold hover:bg-[#F8FAFC] transition-all cursor-pointer">Modify Selection</button>
+                </div>
+              )}
+
+              {recommendationStage === "choose-profile" && (
+                <div className="flex flex-col gap-4 mt-2">
+                  <div className="grid grid-cols-1 gap-2.5">
+                    {RISK_OPTIONS.map((risk) => (
+                      <button
+                        key={risk}
+                        type="button"
+                        onClick={() => setSelectedRisk(risk)}
+                        className={`w-full text-left p-4 rounded-2xl border ${selectedRisk === risk ? 'border-primary bg-primary/5' : 'border-[#E5E7EB] bg-[#F8FAFC] hover:bg-white'} transition-all cursor-pointer`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-display font-bold text-sm text-[#111827]">{risk}</span>
+                          <span className={`h-4.5 w-4.5 rounded-full border flex items-center justify-center ${selectedRisk === risk ? "border-primary text-primary bg-white" : "border-[#CBD5E1]"}`}>
+                            {selectedRisk === risk && <div className="h-2 w-2 rounded-full bg-primary" />}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#6B7280] font-medium mt-1">
+                          {risk === 'Very Aggressive' ? 'Maximum allocation towards higher volatility equity instruments for extreme compounding.' : 
+                           risk === 'Aggressive' ? 'Significant exposure to capital growth assets with moderate stability buffers.' : 
+                           risk === 'Moderate' ? 'Balanced allocation split evenly between capital preservation and steady market returns.' : 
+                           'Defensive asset structure prioritizing capital preservation and inflation protection.'}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={() => handleConfirmSelection(selectedRisk)} className="mt-2 w-full px-5 py-3 bg-primary text-white rounded-xl text-xs font-bold hover:bg-opacity-95 shadow-sm transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>Confirm Selected Profile</span>
+                  </button>
+                </div>
+              )}
+
+              {savingProfile && (
+                <div className="flex items-center justify-center gap-2 text-xs font-semibold text-[#6B7280] font-mono mt-2">
+                  <div className="h-3 w-3 rounded-full border-2 border-[#CBD5E1] border-t-primary animate-spin" />
+                  <span>Saving risk profile & portfolio weights...</span>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );

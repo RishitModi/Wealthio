@@ -1,16 +1,17 @@
 import React from "react";
+import { Table } from "lucide-react";
 
 const ASSET_COLORS = {
-  STOCKS: "#2563EB",       // Blue
-  MUTUAL_FUND: "#10B981",  // Green
-  GOLD: "#F59E0B",         // Gold
-  ETF: "#8B5CF6",          // Purple
+  STOCKS: "#4F46E5",       // Indigo
+  MUTUAL_FUND: "#10B981",  // Emerald
+  GOLD: "#F59E0B",         // Amber
+  ETF: "#7C3AED",          // Purple
   FD: "#06B6D4",           // Cyan
   CRYPTO: "#F97316",       // Orange
-  BONDS: "#6366F1",        // Indigo
+  BONDS: "#6366F1",        // Violet
 };
 
-const FALLBACK_COLORS = ["#2563EB", "#10B981", "#F59E0B", "#8B5CF6", "#06B6D4", "#F97316", "#6366F1"];
+const FALLBACK_COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#7C3AED", "#06B6D4", "#F97316", "#6366F1"];
 
 const getAssetColor = (assetClass, index) => {
   if (!assetClass) return FALLBACK_COLORS[index % FALLBACK_COLORS.length];
@@ -42,56 +43,60 @@ export default function AllocationTable({ allocations = [] }) {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col">
-      <div className="p-6 border-b border-slate-100 flex items-center gap-2">
-        <span className="material-symbols-outlined text-blue-600">table_chart</span>
-        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 font-mono">
+    <div className="rounded-3xl border border-[#E5E7EB] bg-white shadow-premium overflow-hidden flex flex-col hover:shadow-premium-hover transition-all duration-300">
+      {/* Header */}
+      <div className="p-6 border-b border-[#F1F5F9] flex items-center gap-2">
+        <div className="bg-primary/10 p-2 rounded-xl text-primary flex items-center justify-center">
+          <Table className="h-4.5 w-4.5" />
+        </div>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-[#111827] font-mono">
           Allocation Breakdown
         </h3>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm border-collapse text-left">
+
+      <div className="overflow-x-auto scrollbar-thin">
+        <table className="w-full text-xs border-collapse text-left">
           <thead>
-            <tr className="bg-slate-50/50 border-b border-slate-150">
-              <th className="px-3 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500 font-mono">
+            <tr className="bg-[#F8FAFC]/50 border-b border-[#E5E7EB]">
+              <th className="px-5 py-4 text-[10px] font-bold uppercase tracking-wider text-[#6B7280] font-mono">
                 Asset Class
               </th>
-              <th className="px-3 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500 font-mono">
+              <th className="px-5 py-4 text-[10px] font-bold uppercase tracking-wider text-[#6B7280] font-mono">
                 Weight
               </th>
-              <th className="px-3 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500 font-mono w-24">
+              <th className="px-5 py-4 text-[10px] font-bold uppercase tracking-wider text-[#6B7280] font-mono w-24">
                 Allocation
               </th>
-              <th className="px-3 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500 font-mono">
+              <th className="px-5 py-4 text-[10px] font-bold uppercase tracking-wider text-[#6B7280] font-mono">
                 Amount
               </th>
-              <th className="px-3 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500 font-mono">
-                Reasoning
+              <th className="px-5 py-4 text-[10px] font-bold uppercase tracking-wider text-[#6B7280] font-mono">
+                AI Reasoning
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-[#F1F5F9]">
             {allocations.map((a, i) => {
               const assetColor = getAssetColor(a.assetClass, i);
               const weight = a.allocationPercentage ?? 0;
               return (
-                <tr key={a.id ?? i} className="hover:bg-slate-50/50 transition-colors">
+                <tr key={a.id ?? i} className="hover:bg-[#F8FAFC] transition-colors duration-150">
                   {/* Asset class label */}
-                  <td className="px-3 py-3.5 font-semibold text-slate-900 whitespace-nowrap">
+                  <td className="px-5 py-4 font-bold text-[#111827] whitespace-nowrap font-display">
                     <div className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: assetColor }} />
+                      <span className="h-2.5 w-2.5 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: assetColor }} />
                       {formatAssetLabel(a.assetClass)}
                     </div>
                   </td>
 
                   {/* Percentage weight */}
-                  <td className="px-3 py-3.5 font-bold text-slate-800 font-mono whitespace-nowrap">
+                  <td className="px-5 py-4 font-bold text-[#111827] font-mono whitespace-nowrap">
                     {weight.toFixed(1)}%
                   </td>
 
                   {/* Allocation Weight progress bar */}
-                  <td className="px-3 py-3.5 whitespace-nowrap">
-                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                  <td className="px-5 py-4 whitespace-nowrap">
+                    <div className="w-full bg-[#F1F5F9] rounded-full h-1.5 overflow-hidden border border-[#E5E7EB]/50">
                       <div
                         className="h-full rounded-full transition-all duration-500 ease-out"
                         style={{
@@ -103,13 +108,13 @@ export default function AllocationTable({ allocations = [] }) {
                   </td>
 
                   {/* Allocation amount */}
-                  <td className="px-3 py-3.5 font-semibold text-slate-700 font-mono whitespace-nowrap">
+                  <td className="px-5 py-4 font-extrabold text-[#111827] font-mono whitespace-nowrap">
                     {formatCurrency(a.allocationAmount)}
                   </td>
 
                   {/* Optimization reasoning */}
-                  <td className="px-3 py-3.5 text-slate-500 text-xs font-normal leading-relaxed whitespace-normal break-words max-w-[200px]">
-                    {a.reasoning ?? "Optimized based on historical returns and user risk aversion profile."}
+                  <td className="px-5 py-4 text-[#6B7280] text-[11px] font-medium leading-relaxed whitespace-normal break-words max-w-[220px]">
+                    {a.reasoning ?? "Optimized weight assigned matching your risk constraints and objective returns."}
                   </td>
                 </tr>
               );
