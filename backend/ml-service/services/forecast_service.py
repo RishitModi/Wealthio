@@ -35,12 +35,7 @@ def load_asset_history(asset: str, currency: str = "INR") -> pd.DataFrame:
         col = "Close_INR" if currency == "INR" else "Close_USD"
         df = df.rename(columns={"Date": "ds", col: "y"})[["ds", "y"]]
     elif asset == "nifty":
-        df = pd.read_csv(find_file("data/raw/nifty50_historical.csv"))
-        df = df.rename(columns={"Price": "Date"})
-        df = df[df["Date"] != "Ticker"]
-        df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
-        df["Close"] = pd.to_numeric(df["Close"], errors="coerce")
-        df = df.dropna(subset=["Date", "Close"]).sort_values("Date")
+        df = pd.read_csv(find_file("data/nifty50_daily.csv"))
         df = df.rename(columns={"Date": "ds", "Close": "y"})[["ds", "y"]]
     else:
         raise ValueError(f"Unknown asset: {asset}. Use 'gold' or 'nifty'")
@@ -190,7 +185,24 @@ def _synthetic_forecast(df: pd.DataFrame, periods: int = 30) -> dict:
     }
 
 
-def forecast_asset(asset: str, periods: int = 30, currency: str = "INR") -> dict:
+_FORECAST_CACHE = {}
+
+def clear_forecast_cache():
+    _FORECAST_CACHE.clear()
+
+def precalculate_forecasts():
+    print("[forecast_service] Pre-calculating Nifty & Gold forecasts...")
+    clear_forecast_cache()
+    # Cache Nifty & Gold for both INR and USD (standard 30-day period)
+    for asset in ["nifty", "gold"]:
+        for currency in ["INR", "USD"]:
+            try:
+                forecast_asset(asset, periods=30, currency=currency)
+            except Exception as e:
+                print(f"[forecast_service] Pre-calculation failed for {asset} ({currency}): {e}")
+    print("[forecast_service] Pre-calculation complete.")
+
+def forecast_asset_uncached(asset: str, periods: int = 30, currency: str = "INR") -> dict:
     """
     Attempts Prophet forecast, falls back to linear trend on ANY failure.
     Uses BaseException to catch even SystemExit from Prophet's stan subprocess.
@@ -219,4 +231,13 @@ def forecast_asset(asset: str, periods: int = 30, currency: str = "INR") -> dict
         result["currency"] = currency.upper()
         result["usdinrRate"] = get_latest_usdinr_rate()
         return result
+
+def forecast_asset(asset: str, periods: int = 30, currency: str = "INR") -> dict:
+    key = (asset.lower(), periods, currency.upper())
+    if key in _FORECAST_CACHE:
+        return _FORECAST_CACHE[key]
+    
+    result = forecast_asset_uncached(asset, periods, currency)
+    _FORECAST_CACHE[key] = result
+    return result
     

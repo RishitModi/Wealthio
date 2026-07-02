@@ -37,12 +37,34 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 
 
-# ── Data loaders ──────────────────────────────────────────────────────────────
+_COVARIANCE_MATRIX_CACHE = None
 
-def _load_covariance_matrix() -> np.ndarray:
-    """Load the 4x4 covariance matrix in RISKY_ASSETS order."""
+def clear_optimizer_cache():
+    global _COVARIANCE_MATRIX_CACHE
+    _COVARIANCE_MATRIX_CACHE = None
+
+def reload_optimizer_cache():
+    print("[optimizer_service] Reloading MPT inputs cache...")
+    clear_optimizer_cache()
+    from services.shrinkage_service import clear_shrinkage_cache, get_shrunk_returns
+    clear_shrinkage_cache()
+    try:
+        _load_covariance_matrix()
+        get_shrunk_returns()
+        print("[optimizer_service] MPT cache reloaded successfully.")
+    except Exception as e:
+        print(f"[optimizer_service] Failed to reload MPT cache: {e}")
+
+def _load_covariance_matrix_uncached() -> np.ndarray:
     cov_df = pd.read_csv(DATA_DIR / "covariance_matrix.csv", index_col=0)
     return cov_df.loc[RISKY_ASSETS, RISKY_ASSETS].values
+
+def _load_covariance_matrix() -> np.ndarray:
+    """Load the 4x4 covariance matrix in RISKY_ASSETS order (utilizing in-memory cache)."""
+    global _COVARIANCE_MATRIX_CACHE
+    if _COVARIANCE_MATRIX_CACHE is None:
+        _COVARIANCE_MATRIX_CACHE = _load_covariance_matrix_uncached()
+    return _COVARIANCE_MATRIX_CACHE
 
 
 def _load_gamma(risk_category: str) -> float:
