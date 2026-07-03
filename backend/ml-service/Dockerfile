@@ -11,6 +11,7 @@ COPY . .
 
 # Generate ML models/artifacts during build
 RUN python training/train_kmeans.py
+RUN python data/collect_data.py
 
 # Expose port
 EXPOSE 8000
