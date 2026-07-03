@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: wealthio-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: wealthio
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: wealthio-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_URL=jdbc:postgresql://db:5432/wealthio
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=password
+      - JWT_SECRET=supersecretjwtkeythatislongenoughforhs256
+      - ML_SERVICE_URL=http://ml-service:8000
+    depends_on:
+      db:
+        condition: service_healthy
+
+  ml-service:
+    build:
+      context: ./backend/ml-service
+    container_name: wealthio-ml-service
+    ports:
+      - "8000:8000"
+    environment:
+      - SPRING_BACKEND_URL=http://backend:8080
+      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY:-demo}
+      - COINGECKO_API_KEY=${COINGECKO_API_KEY:-demo}
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: wealthio-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

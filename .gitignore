@@ -26,3 +26,4 @@ Desktop.ini
 .venv/
 venv/
 __pycache__/
+DEPLOYMENT_GUIDE.md
