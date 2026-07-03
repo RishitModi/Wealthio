@@ -12,6 +12,7 @@ import com.wealthio.repositories.PortfolioRepository;
 import com.wealthio.repositories.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +39,10 @@ public class PortfolioService {
     @Autowired
     private MLService mlService;
 
+    @Autowired
+    @Lazy
+    private PortfolioService self;
+
     // ── Public API ────────────────────────────────────────────────────────────
 
     /**
@@ -47,73 +52,88 @@ public class PortfolioService {
      *   <li>Calculate investable amount  = monthlySavings × 12 × 0.7</li>
      *   <li>Ask ML service for risk profile</li>
      *   <li>Ask ML service for asset allocation</li>
-     *   <li>Persist Portfolio + PortfolioAllocation rows</li>
+     *   <li>Persist Portfolio + PortfolioAllocation rows (in a separate transaction)</li>
      *   <li>Return a PortfolioResponse DTO</li>
      * </ol>
      */
-    @Transactional
     public PortfolioResponse generatePortfolio(Long userId) {
         log.info("Generating portfolio for userId={}", userId);
 
-        // 1. Resolve user
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-
-        // 2. Fetch financial profile
+        // 1. Fetch financial profile
         FinancialProfile financialProfile = financialProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Financial profile not found for userId=" + userId +
                         ". Please complete onboarding before generating a portfolio."));
 
-        // 3. Calculate investable amount
+        // 2. Calculate investable amount
         double investableAmount = calculateInvestableAmount(financialProfile.getMonthlySavings());
         log.info("Investable amount for userId={}: {}", userId, investableAmount);
 
-        // 4. Build the request the ML service expects and get the risk profile
+        // 3. Build the request the ML service expects and get the risk profile
         FinancialProfileRequest mlRequest = buildMlRequest(financialProfile, investableAmount);
         RiskProfileResponse riskResponse = mlService.getRiskProfile(mlRequest);
         String riskCategory = riskResponse.getRiskCategory();
         log.info("ML risk profile for userId={}: {}", userId, riskCategory);
 
-        // 5. Get asset allocation from ML service
+        // 4. Get asset allocation from ML service (Long running HTTP call outside transaction)
         List<AllocationResult> allocations = mlService.getPortfolioAllocation(riskCategory, investableAmount, mlRequest);
         log.info("ML allocation for userId={}: {} assets", userId, allocations.size());
 
-        // 6. Persist or update Portfolio entity
+        // 5. Persist or update Portfolio entity inside a transaction
+        return self.saveGeneratedPortfolio(userId, riskCategory, investableAmount, allocations);
+    }
+
+    /**
+     * Internal method to handle DB writes within a transaction.
+     */
+    @Transactional
+    public PortfolioResponse saveGeneratedPortfolio(Long userId, String riskCategory, double investableAmount, List<AllocationResult> allocations) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
         Portfolio portfolio = portfolioRepository.findByUserId(userId)
                 .orElse(new Portfolio(user));
         portfolio.setRiskCategory(riskCategory);
         portfolio.setTotalInvestableAmount(investableAmount);
         portfolio = portfolioRepository.save(portfolio);
 
-        // 7. Replace existing allocations with fresh ones
         List<PortfolioAllocation> existingAllocations = portfolioAllocationRepository.findByPortfolio(portfolio);
         portfolioAllocationRepository.deleteAll(existingAllocations);
 
         List<PortfolioAllocation> savedAllocations = persistAllocations(portfolio, allocations);
 
         log.info("Portfolio generated and saved for userId={}, portfolioId={}", userId, portfolio.getId());
-        return buildResponse(portfolio, savedAllocations);
+        return buildResponse(portfolio, savedAllocations, userId);
     }
 
     /**
      * Return an existing portfolio for the user, or generate one on-demand.
      */
-    @Transactional
     public PortfolioResponse getPortfolio(Long userId) {
         // Verify user exists
         userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
+        PortfolioResponse response = self.fetchExistingPortfolio(userId);
+        if (response != null) {
+            return response;
+        }
+
+        log.info("No portfolio found for userId={}. Generating one now.", userId);
+        return generatePortfolio(userId);
+    }
+
+    /**
+     * Internal method to handle DB reads within a read-only transaction.
+     */
+    @Transactional(readOnly = true)
+    public PortfolioResponse fetchExistingPortfolio(Long userId) {
         return portfolioRepository.findByUserId(userId)
                 .map(portfolio -> {
                     List<PortfolioAllocation> allocs = portfolioAllocationRepository.findByPortfolio(portfolio);
-                    return buildResponse(portfolio, allocs);
+                    return buildResponse(portfolio, allocs, userId);
                 })
-                .orElseGet(() -> {
-                    log.info("No portfolio found for userId={}. Generating one now.", userId);
-                    return generatePortfolio(userId);
-                });
+                .orElse(null);
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
@@ -191,7 +211,7 @@ public class PortfolioService {
     /**
      * Assemble a PortfolioResponse from saved entities.
      */
-    private PortfolioResponse buildResponse(Portfolio portfolio, List<PortfolioAllocation> allocations) {
+    private PortfolioResponse buildResponse(Portfolio portfolio, List<PortfolioAllocation> allocations, Long userId) {
         List<PortfolioResponse.AllocationDto> allocationDtos = allocations.stream()
                 .map(pa -> PortfolioResponse.AllocationDto.builder()
                         .id(pa.getId())
@@ -204,7 +224,7 @@ public class PortfolioService {
 
         return PortfolioResponse.builder()
                 .portfolioId(portfolio.getId())
-                .userId(portfolio.getUser().getId())
+                .userId(userId)
                 .riskCategory(portfolio.getRiskCategory())
                 .totalInvestableAmount(portfolio.getTotalInvestableAmount())
                 .allocations(allocationDtos)
