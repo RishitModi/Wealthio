@@ -22,8 +22,7 @@ public class MLProxyController {
         return webClient.post()
                 .uri("/risk-profile")
                 .bodyValue(body)
-                .retrieve()
-                .toEntity(Object.class);
+                .exchangeToMono(response -> response.toEntity(Object.class));
     }
 
     @PostMapping("/risk-selection")
@@ -31,8 +30,7 @@ public class MLProxyController {
         return webClient.post()
                 .uri("/risk-selection")
                 .bodyValue(body)
-                .retrieve()
-                .toEntity(Object.class);
+                .exchangeToMono(response -> response.toEntity(Object.class));
     }
 
     @GetMapping("/market/forecast")
@@ -48,7 +46,6 @@ public class MLProxyController {
                         .queryParam("periods", periods)
                         .queryParam("currency", currency)
                         .build())
-                .retrieve()
-                .toEntity(Object.class);
+                .exchangeToMono(response -> response.toEntity(Object.class));
     }
 }
