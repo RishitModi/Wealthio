@@ -3,49 +3,42 @@ package com.wealthio.controllers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+import org.springframework.web.client.RestTemplate;
 
 @RestController
 @RequestMapping("/api/ml")
 public class MLProxyController {
 
-    private final WebClient webClient;
+    private final RestTemplate mlRestTemplate;
 
     @Autowired
-    public MLProxyController(WebClient webClient) {
-        this.webClient = webClient;
+    public MLProxyController(RestTemplate mlRestTemplate) {
+        this.mlRestTemplate = mlRestTemplate;
     }
 
     @PostMapping("/risk-profile")
-    public Mono<ResponseEntity<Object>> proxyRiskProfile(@RequestBody Object body) {
-        return webClient.post()
-                .uri("/risk-profile")
-                .bodyValue(body)
-                .exchangeToMono(response -> response.toEntity(Object.class));
+    public ResponseEntity<Object> proxyRiskProfile(@RequestBody Object body) {
+        ResponseEntity<Object> response = mlRestTemplate.postForEntity(
+                "/risk-profile", body, Object.class);
+        return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
     }
 
     @PostMapping("/risk-selection")
-    public Mono<ResponseEntity<Object>> proxyRiskSelection(@RequestBody Object body) {
-        return webClient.post()
-                .uri("/risk-selection")
-                .bodyValue(body)
-                .exchangeToMono(response -> response.toEntity(Object.class));
+    public ResponseEntity<Object> proxyRiskSelection(@RequestBody Object body) {
+        ResponseEntity<Object> response = mlRestTemplate.postForEntity(
+                "/risk-selection", body, Object.class);
+        return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
     }
 
     @GetMapping("/market/forecast")
-    public Mono<ResponseEntity<Object>> proxyMarketForecast(
+    public ResponseEntity<Object> proxyMarketForecast(
             @RequestParam String asset,
             @RequestParam(defaultValue = "30") int periods,
             @RequestParam(defaultValue = "INR") String currency) {
-        
-        return webClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/api/market/forecast")
-                        .queryParam("asset", asset)
-                        .queryParam("periods", periods)
-                        .queryParam("currency", currency)
-                        .build())
-                .exchangeToMono(response -> response.toEntity(Object.class));
+
+        String url = "/api/market/forecast?asset={asset}&periods={periods}&currency={currency}";
+        ResponseEntity<Object> response = mlRestTemplate.getForEntity(
+                url, Object.class, asset, periods, currency);
+        return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
     }
 }
