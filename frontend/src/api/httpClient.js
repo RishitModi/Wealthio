@@ -22,7 +22,7 @@ export function getErrorMessage(error) {
   }
   if (error?.message) {
     if (error.message === "Network Error") {
-      return "Network error or CORS issue. Make sure the backend is running at http://localhost:8080 and that http://localhost:5174 is allowed in CORS.";
+      return `Network error or CORS issue. The application tried to reach ${apiBaseUrl} but failed. Check if the backend is running and CORS allows this domain.`;
     }
     return error.message;
   }
