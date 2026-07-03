@@ -19,9 +19,17 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.StringUtils;
+import java.util.Arrays;
+import java.util.ArrayList;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Value("${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174}")
+    private String allowedOrigins;
 
     @Autowired
     private JwtAuthFilter jwtAuthFilter;
@@ -44,6 +52,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Allow authentication endpoints without token
                         .requestMatchers("/api/auth/**").permitAll()
+                        // Allow ML proxy endpoints without token (as they might be used during onboarding)
+                        .requestMatchers("/api/ml/**").permitAll()
                         // Allow Swagger UI and OpenAPI spec without token
                         .requestMatchers(
                                 "/swagger-ui.html",
@@ -65,13 +75,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Allow requests from these origins
-        config.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://127.0.0.1:5173",
-                "http://localhost:5174",
-                "http://127.0.0.1:5174"
-        ));
+        // Allow requests from configured origins
+        List<String> origins = new ArrayList<>();
+        if (StringUtils.hasText(allowedOrigins)) {
+            origins.addAll(Arrays.asList(allowedOrigins.split(",")));
+        }
+        config.setAllowedOrigins(origins);
 
         // Allow these HTTP methods
         config.setAllowedMethods(List.of(

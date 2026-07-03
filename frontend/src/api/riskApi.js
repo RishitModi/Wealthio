@@ -1,9 +1,9 @@
 import { apiClient, getErrorMessage } from "./httpClient";
 
-const riskApiBaseUrl = import.meta.env.VITE_RISK_API_BASE_URL || "http://localhost:8001";
+const mlApiBaseUrl = "/api/ml";
 
 export async function predictRisk(payload, token) {
-  const url = `${riskApiBaseUrl}/risk-profile`;
+  const url = `${mlApiBaseUrl}/risk-profile`;
   console.log("Risk API URL:", url);
   console.log("Request payload:", payload);
 
@@ -29,7 +29,7 @@ export async function predictRisk(payload, token) {
 export default { predictRisk };
 
 export async function persistSelection(payload, token) {
-  const url = `${riskApiBaseUrl}/risk-selection`;
+  const url = `${mlApiBaseUrl}/risk-selection`;
   console.log("Risk persist URL:", url);
   console.log("Persist selection payload:", payload);
 

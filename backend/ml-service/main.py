@@ -14,16 +14,26 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# ── CORS (allow Spring Boot backend + React frontend) ────────────────────────
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+import os
+
+# Get allowed origins from environment, fallback to localhost defaults
+allowed_origins_env = os.environ.get("CORS_ALLOWED_ORIGINS", "")
+if allowed_origins_env:
+    origins = [origin.strip() for origin in allowed_origins_env.split(",")]
+else:
+    origins = [
         "http://localhost:8080",
         "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:5174",
         "http://127.0.0.1:5174",
-    ],
+        "https://wealthio-backend.onrender.com",
+    ]
+
+# ── CORS (allow Spring Boot backend + React frontend) ────────────────────────
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
