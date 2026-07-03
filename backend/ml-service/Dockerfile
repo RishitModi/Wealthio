@@ -17,4 +17,4 @@ RUN python data/collect_data.py
 EXPOSE 8000
 
 # Run the FastAPI application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD sh -c "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"

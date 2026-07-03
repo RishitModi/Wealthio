@@ -18,16 +18,28 @@ public class MLProxyController {
 
     @PostMapping("/risk-profile")
     public ResponseEntity<Object> proxyRiskProfile(@RequestBody Object body) {
-        ResponseEntity<Object> response = mlRestTemplate.postForEntity(
-                "/risk-profile", body, Object.class);
-        return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        try {
+            ResponseEntity<Object> response = mlRestTemplate.postForEntity(
+                    "/risk-profile", body, Object.class);
+            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        } catch (org.springframework.web.client.HttpStatusCodeException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .headers(e.getResponseHeaders())
+                    .body(e.getResponseBodyAsString());
+        }
     }
 
     @PostMapping("/risk-selection")
     public ResponseEntity<Object> proxyRiskSelection(@RequestBody Object body) {
-        ResponseEntity<Object> response = mlRestTemplate.postForEntity(
-                "/risk-selection", body, Object.class);
-        return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        try {
+            ResponseEntity<Object> response = mlRestTemplate.postForEntity(
+                    "/risk-selection", body, Object.class);
+            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        } catch (org.springframework.web.client.HttpStatusCodeException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .headers(e.getResponseHeaders())
+                    .body(e.getResponseBodyAsString());
+        }
     }
 
     @GetMapping("/market/forecast")
@@ -37,8 +49,14 @@ public class MLProxyController {
             @RequestParam(defaultValue = "INR") String currency) {
 
         String url = "/api/market/forecast?asset={asset}&periods={periods}&currency={currency}";
-        ResponseEntity<Object> response = mlRestTemplate.getForEntity(
-                url, Object.class, asset, periods, currency);
-        return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        try {
+            ResponseEntity<Object> response = mlRestTemplate.getForEntity(
+                    url, Object.class, asset, periods, currency);
+            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        } catch (org.springframework.web.client.HttpStatusCodeException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .headers(e.getResponseHeaders())
+                    .body(e.getResponseBodyAsString());
+        }
     }
 }
