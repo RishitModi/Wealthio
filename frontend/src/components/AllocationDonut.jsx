@@ -22,6 +22,7 @@ const getAssetColor = (assetClass, index) => {
 
 const formatAssetLabel = (assetClass) => {
   if (!assetClass) return "Other";
+  if (assetClass.toUpperCase() === "ETF") return "ETF";
   return assetClass
     .toLowerCase()
     .replace(/_/g, " ")
@@ -89,7 +90,7 @@ export default function AllocationDonut({ allocations = [] }) {
   if (chartData.length === 0) return null;
 
   return (
-    <div className="rounded-3xl border border-[#E5E7EB] bg-white p-6 shadow-premium flex flex-col gap-6 hover:shadow-premium-hover transition-all duration-300">
+    <div className="h-full rounded-3xl border border-[#E5E7EB] bg-white p-6 shadow-premium flex flex-col gap-6 hover:shadow-premium-hover transition-all duration-300">
       {/* Header */}
       <div className="flex items-center gap-2">
         <div className="bg-primary/10 p-2 rounded-xl text-primary flex items-center justify-center">
@@ -101,7 +102,7 @@ export default function AllocationDonut({ allocations = [] }) {
       </div>
 
       {/* Donut Chart */}
-      <div className="flex justify-center items-center w-full py-2">
+      <div className="flex-1 flex justify-center items-center w-full py-2">
         <div className="w-[240px] h-[240px] relative">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -132,32 +133,6 @@ export default function AllocationDonut({ allocations = [] }) {
             </span>
           </div>
         </div>
-      </div>
-
-      {/* Legend */}
-      <div className="flex flex-col gap-2.5 pt-4 border-t border-[#F1F5F9] w-full">
-        {chartData.map((item, index) => (
-          <div
-            key={item.id ?? index}
-            className="flex items-center w-full py-1.5 hover:bg-[#F8FAFC]/50 px-2 rounded-xl transition-all duration-200"
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <span
-                className="h-2.5 w-2.5 rounded-full shrink-0 shadow-sm"
-                style={{ backgroundColor: item.color }}
-              />
-              <span className="text-xs font-bold text-[#111827] truncate font-display">
-                {item.name}
-              </span>
-            </div>
-            <span className="text-[11px] font-semibold text-[#6B7280] font-mono ml-6">
-              {formatCurrency(item.allocationAmount)}
-            </span>
-            <span className="text-xs font-bold text-[#111827] font-mono ml-auto">
-              {(item.allocationPercentage ?? 0).toFixed(1)}%
-            </span>
-          </div>
-        ))}
       </div>
     </div>
   );

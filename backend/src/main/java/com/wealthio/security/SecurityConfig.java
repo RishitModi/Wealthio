@@ -80,7 +80,18 @@ public class SecurityConfig {
         if (StringUtils.hasText(allowedOrigins)) {
             origins.addAll(Arrays.asList(allowedOrigins.split(",")));
         }
-        config.setAllowedOrigins(origins);
+        
+        List<String> patterns = new ArrayList<>();
+        for (String origin : origins) {
+            patterns.add(origin);
+        }
+        // Dynamically allow deployment environments
+        patterns.add("https://*.vercel.app");
+        patterns.add("https://*.onrender.com");
+        patterns.add("http://localhost:[*]");
+        patterns.add("http://127.0.0.1:[*]");
+        
+        config.setAllowedOriginPatterns(patterns);
 
         // Allow these HTTP methods
         config.setAllowedMethods(List.of(
