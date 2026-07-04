@@ -21,6 +21,7 @@ const getAssetColor = (assetClass, index) => {
 
 const formatAssetLabel = (assetClass) => {
   if (!assetClass) return "Other";
+  if (assetClass.toUpperCase() === "ETF") return "ETF";
   return assetClass
     .toLowerCase()
     .replace(/_/g, " ")
@@ -43,7 +44,7 @@ export default function AllocationTable({ allocations = [] }) {
   }
 
   return (
-    <div className="rounded-3xl border border-[#E5E7EB] bg-white shadow-premium overflow-hidden flex flex-col hover:shadow-premium-hover transition-all duration-300">
+    <div className="h-full rounded-3xl border border-[#E5E7EB] bg-white shadow-premium overflow-hidden flex flex-col hover:shadow-premium-hover transition-all duration-300">
       {/* Header */}
       <div className="p-6 border-b border-[#F1F5F9] flex items-center gap-2">
         <div className="bg-primary/10 p-2 rounded-xl text-primary flex items-center justify-center">
@@ -69,9 +70,6 @@ export default function AllocationTable({ allocations = [] }) {
               </th>
               <th className="px-5 py-4 text-[10px] font-bold uppercase tracking-wider text-[#6B7280] font-mono">
                 Amount
-              </th>
-              <th className="px-5 py-4 text-[10px] font-bold uppercase tracking-wider text-[#6B7280] font-mono">
-                AI Reasoning
               </th>
             </tr>
           </thead>
@@ -110,11 +108,6 @@ export default function AllocationTable({ allocations = [] }) {
                   {/* Allocation amount */}
                   <td className="px-5 py-4 font-extrabold text-[#111827] font-mono whitespace-nowrap">
                     {formatCurrency(a.allocationAmount)}
-                  </td>
-
-                  {/* Optimization reasoning */}
-                  <td className="px-5 py-4 text-[#6B7280] text-[11px] font-medium leading-relaxed whitespace-normal break-words max-w-[220px]">
-                    {a.reasoning ?? "Optimized weight assigned matching your risk constraints and objective returns."}
                   </td>
                 </tr>
               );

@@ -392,14 +392,14 @@ export default function Dashboard() {
 
         {/* Premium Dashboard UI */}
         {status === "ready" && portfolio && (
-          <>
+          <div className="grid grid-cols-12 gap-8 items-stretch">
             {/* 1. Dashboard Welcome Hero (Full width) */}
-            <div className="bg-white border border-[#E5E7EB] rounded-3xl p-8 shadow-premium flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 relative overflow-hidden">
+            <div className="col-span-12 bg-white border border-[#E5E7EB] rounded-3xl p-8 shadow-premium flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#4F46E5]/3 rounded-full pointer-events-none -translate-y-1/2 translate-x-1/3" />
               
               <div className="relative z-10 flex flex-col gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
                   <span className="text-[10px] font-bold text-[#6B7280] font-mono uppercase tracking-wider">
                     Welcome back, {user?.name || "Investor"}
                   </span>
@@ -450,38 +450,33 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* 2. 12-Column Responsive Dashboard Layout */}
-            <div className="grid grid-cols-12 gap-8 items-start">
-              
-              {/* AI Market Forecast (Prophet): 12 columns */}
-              <div className="col-span-12">
-                <ForecastSection />
-              </div>
-
-              {/* Asset Allocation Chart (Donut): 5 columns */}
-              <div className="col-span-12 lg:col-span-5">
-                <AllocationDonut allocations={portfolio.allocations} />
-              </div>
-
-              {/* Allocation Breakdown Table: 7 columns */}
-              <div className="col-span-12 lg:col-span-7">
-                <AllocationTable allocations={portfolio.allocations} />
-              </div>
-
-              {/* Live Market Snapshot: 12 columns */}
-              {market && (
-                <div className="col-span-12">
-                  <MarketSnapshot market={market} />
-                </div>
-              )}
-
-              {/* Live Market Indices: 12 columns */}
-              <div className="col-span-12">
-                <LiveMarketIndices />
-              </div>
-
+            {/* AI Market Forecast (Prophet): 12 columns */}
+            <div className="col-span-12">
+              <ForecastSection />
             </div>
-          </>
+
+            {/* Asset Allocation Chart (Donut): 6 columns */}
+            <div className="col-span-12 lg:col-span-6">
+              <AllocationDonut allocations={portfolio.allocations} />
+            </div>
+
+            {/* Allocation Breakdown Table: 6 columns */}
+            <div className="col-span-12 lg:col-span-6">
+              <AllocationTable allocations={portfolio.allocations} />
+            </div>
+
+            {/* Live Market Snapshot: 12 columns */}
+            {market && (
+              <div className="col-span-12">
+                <MarketSnapshot market={market} />
+              </div>
+            )}
+
+            {/* Live Market Indices: 12 columns */}
+            <div className="col-span-12">
+              <LiveMarketIndices />
+            </div>
+          </div>
         )}
       </main>
     </div>
