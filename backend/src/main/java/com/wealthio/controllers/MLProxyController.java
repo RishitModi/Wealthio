@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/ml")
@@ -26,6 +27,9 @@ public class MLProxyController {
             return ResponseEntity.status(e.getStatusCode())
                     .headers(e.getResponseHeaders())
                     .body(e.getResponseBodyAsString());
+        } catch (Exception e) {
+            return ResponseEntity.status(503)
+                    .body(Map.of("message", "ML Service is currently offline or unreachable: " + e.getMessage()));
         }
     }
 
@@ -39,6 +43,9 @@ public class MLProxyController {
             return ResponseEntity.status(e.getStatusCode())
                     .headers(e.getResponseHeaders())
                     .body(e.getResponseBodyAsString());
+        } catch (Exception e) {
+            return ResponseEntity.status(503)
+                    .body(Map.of("message", "ML Service is currently offline or unreachable: " + e.getMessage()));
         }
     }
 
@@ -57,6 +64,9 @@ public class MLProxyController {
             return ResponseEntity.status(e.getStatusCode())
                     .headers(e.getResponseHeaders())
                     .body(e.getResponseBodyAsString());
+        } catch (Exception e) {
+            return ResponseEntity.status(503)
+                    .body(Map.of("message", "ML Service is currently offline or unreachable: " + e.getMessage()));
         }
     }
 }
