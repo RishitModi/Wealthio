@@ -262,7 +262,7 @@ export default function Onboarding() {
         riskAppetite: risk.toLowerCase().replace(/\s+/g, "_"),
       };
       await saveProfile(payload, user?.token);
-      navigate("/dashboard");
+      navigate("/dashboard", { state: { fromOnboarding: true } });
     } catch (err) {
       setRecommendationError(err.message || "Failed to save profile.");
     } finally {

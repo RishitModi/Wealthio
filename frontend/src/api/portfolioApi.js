@@ -49,3 +49,19 @@ export async function getMarketData(token) {
     throw new Error(getErrorMessage(error), { cause: error });
   }
 }
+
+/**
+ * GET /api/ml/market/ticker
+ * Returns live market ticker for the curated list of BSE stocks.
+ */
+export async function getMarketTicker(token) {
+  if (!token) throw new Error("Authentication required.");
+  try {
+    const response = await apiClient.get("/api/ml/market/ticker", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error), { cause: error });
+  }
+}

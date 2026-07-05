@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   TrendingUp, 
@@ -19,7 +19,7 @@ import {
 
 import useAuth from "../context/useAuth";
 import Navbar from "../components/Navbar";
-import { getPortfolio, generatePortfolio, getMarketData } from "../api/portfolioApi";
+import { getPortfolio, generatePortfolio, getMarketData, getMarketTicker } from "../api/portfolioApi";
 
 // Redesigned components
 import AllocationDonut from "../components/AllocationDonut";
@@ -144,39 +144,52 @@ function Sparkline({ data, isPositive }) {
 }
 
 // ── Live Market Indices Component ────────────────────
-function LiveMarketIndices() {
-  // Hardcoded index data for premium dashboard look
-  const indices = [
-    { name: "NIFTY 50", price: 24320.55, change: 154.20, changePct: 0.64, spark: [24100, 24150, 24080, 24200, 24280, 24320] },
-    { name: "SENSEX", price: 79980.10, change: 580.45, changePct: 0.73, spark: [79300, 79450, 79350, 79680, 79820, 79980] },
-    { name: "NIFTY BANK", price: 52150.80, change: -78.30, changePct: -0.15, spark: [52300, 52200, 52400, 52100, 52250, 52150] },
-    { name: "NIFTY IT", price: 38240.40, change: 485.60, changePct: 1.29, spark: [37700, 37800, 37900, 38100, 38050, 38240] }
-  ];
+function LiveMarketIndices({ tickerData }) {
+  if (!tickerData || !tickerData.results) {
+    return (
+      <div className="w-full flex flex-col gap-4">
+        <SectionHeading title="Live Market Indices" badge="Real-time" />
+        <div className="h-[72px] bg-white border border-[#E5E7EB] rounded-2xl flex items-center justify-center">
+          <div className="h-5 w-5 rounded-full border-2 border-[#CBD5E1] border-t-primary animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  const stocks = Object.values(tickerData.results)
+    .filter(s => !s.error && s.current_price != null)
+    .sort((a, b) => (a.alias || "").localeCompare(b.alias || ""));
+
+  if (stocks.length === 0) return null;
 
   return (
     <div className="w-full flex flex-col gap-4">
       <SectionHeading title="Live Market Indices" badge="Real-time" />
-      <div className="flex gap-4 overflow-x-auto scrollbar-none pb-1">
-        {indices.map((ind, i) => {
-          const isUp = ind.change >= 0;
-          return (
-            <div
-              key={i}
-              className="min-w-[220px] flex-1 bg-white border border-[#E5E7EB] rounded-2xl p-4 shadow-premium hover:-translate-y-1 hover:shadow-premium-hover transition-all duration-300 flex items-center justify-between"
-            >
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] font-bold text-[#6B7280] font-mono tracking-wider">{ind.name}</span>
-                <span className="text-base font-extrabold text-[#111827] tracking-tight">
-                  {new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(ind.price)}
+      <div className="w-full overflow-hidden bg-white border border-[#E5E7EB] rounded-2xl shadow-premium py-4 pause-on-hover relative">
+        <div className="absolute top-0 bottom-0 left-0 w-8 lg:w-16 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+        <div className="absolute top-0 bottom-0 right-0 w-8 lg:w-16 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+        
+        <div className="animate-marquee flex items-center gap-10 pl-10">
+          {[...stocks, ...stocks].map((ind, i) => {
+            const isUp = (ind.change || 0) >= 0;
+            const displayName = (ind.alias || "").replace(".BO", "").replace(".NS", "");
+            
+            return (
+              <div key={i} className="flex items-center gap-3 shrink-0 cursor-default hover:opacity-80 transition-opacity">
+                <span className="text-xs font-bold text-[#111827] tracking-wider font-display">
+                  {displayName}
                 </span>
-                <div className={`flex items-center gap-0.5 text-xs font-bold ${isUp ? "text-emerald-600" : "text-rose-500"}`}>
-                  <span>{isUp ? "+" : ""}{ind.changePct}%</span>
+                <span className="text-sm font-extrabold text-[#111827] font-mono">
+                  {new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(ind.current_price)}
+                </span>
+                <div className={`flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md ${isUp ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-500"}`}>
+                  {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  <span>{isUp ? "+" : ""}{ind["change_%"]}%</span>
                 </div>
               </div>
-              <Sparkline data={ind.spark} isPositive={isUp} />
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -295,13 +308,16 @@ function MarketSnapshot({ market }) {
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isFromOnboarding = location.state?.fromOnboarding;
 
   const [portfolio, setPortfolio] = useState(null);
   const [market, setMarket]       = useState(null);
+  const [tickerData, setTickerData] = useState(null);
   const [status, setStatus]       = useState("loading"); // loading | ready | error | generating
   const [error, setError]         = useState("");
 
-  const loadPortfolio = useCallback(async () => {
+  const loadPortfolio = useCallback(async (retryCount = 0) => {
     if (!user?.token) return;
     try {
       const data = await getPortfolio(user.token);
@@ -312,6 +328,17 @@ export default function Dashboard() {
         navigate("/onboarding", { replace: true });
         return;
       }
+      
+      // Automatically retry up to 3 times before showing the error screen.
+      // This prevents the loading animation/skeleton from disappearing prematurely during cold-starts or ML timeouts.
+      if (retryCount < 3) {
+        console.warn(`Portfolio generation failed, retrying (${retryCount + 1}/3)...`);
+        setTimeout(() => {
+          loadPortfolio(retryCount + 1);
+        }, 5000);
+        return;
+      }
+
       setError(err.message ?? "Could not load portfolio.");
       setStatus("error");
     }
@@ -327,10 +354,28 @@ export default function Dashboard() {
     }
   }, [user?.token]);
 
+  const loadTicker = useCallback(async () => {
+    if (!user?.token) return;
+    try {
+      const data = await getMarketTicker(user.token);
+      setTickerData(data);
+    } catch {
+      // Fail silently so it keeps showing old data
+    }
+  }, [user?.token]);
+
   useEffect(() => {
     loadPortfolio();
     loadMarket();
-  }, [loadPortfolio, loadMarket]);
+    loadTicker();
+
+    // Poll ticker data every 3 minutes (180000 ms)
+    const interval = setInterval(() => {
+      loadTicker();
+    }, 180000);
+
+    return () => clearInterval(interval);
+  }, [loadPortfolio, loadMarket, loadTicker]);
 
   const handleGenerate = async () => {
     if (!user?.token) return;
@@ -361,8 +406,14 @@ export default function Dashboard() {
 
       <main className="flex-1 w-full max-w-[1280px] mx-auto px-6 py-10 flex flex-col gap-8">
         
-        {/* Loading Skeleton */}
-        {status === "loading" && <DashboardSkeleton />}
+        {/* Loading State */}
+        {status === "loading" && (
+          isFromOnboarding ? (
+            <LoadingSpinner label="Generating profile and collecting data please wait..." />
+          ) : (
+            <DashboardSkeleton />
+          )
+        )}
 
         {/* Optimizing State */}
         {status === "generating" && (
@@ -474,7 +525,7 @@ export default function Dashboard() {
 
             {/* Live Market Indices: 12 columns */}
             <div className="col-span-12">
-              <LiveMarketIndices />
+              <LiveMarketIndices tickerData={tickerData} />
             </div>
           </div>
         )}

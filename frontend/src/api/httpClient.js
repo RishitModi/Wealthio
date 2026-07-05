@@ -17,9 +17,36 @@ export const apiClient = axios.create({
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 8000; // 8 seconds between retries
 
+apiClient.interceptors.request.use(
+  (config) => {
+    try {
+      const storedUser = localStorage.getItem("wealthio_user");
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        if (user && user.token) {
+          config.headers.Authorization = `Bearer ${user.token}`;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to parse user from local storage in apiClient", e);
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // If we receive a 401 Unauthorized, the token has expired or is invalid.
+    // Clear the stored user session and redirect to login.
+    if (error.response && error.response.status === 401) {
+      console.warn("Session expired or unauthorized. Redirecting to login...");
+      localStorage.removeItem("wealthio_user");
+      window.location.href = "/login";
+      return Promise.reject(error);
+    }
+
     const config = error.config;
 
     // Only retry on network errors or 502/503/504 (cold start / wake-up errors)

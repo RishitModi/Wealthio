@@ -14,6 +14,7 @@ import requests
 import yfinance as yf
 from datetime import datetime, timedelta
 from typing import Optional
+from concurrent.futures import ThreadPoolExecutor
 from config import get_settings
 
 settings = get_settings()
@@ -50,10 +51,17 @@ def get_stock_price(ticker: str) -> dict:
     try:
         t = yf.Ticker(resolved)
         info = t.fast_info
+        last_price = float(info.last_price)
+        prev_close = float(info.previous_close) if info.previous_close else last_price
+        change = last_price - prev_close
+        change_pct = (change / prev_close * 100) if prev_close else 0.0
+
         return {
             "ticker":        resolved,
             "alias":         ticker,
-            "current_price": round(float(info.last_price), 2),
+            "current_price": round(last_price, 2),
+            "change":        round(change, 2),
+            "change_%":      round(change_pct, 2),
             "currency":      info.currency,
             "exchange":      info.exchange,
             "fetched_at":    datetime.utcnow().isoformat(),
@@ -103,10 +111,11 @@ def get_gold_silver_rates() -> dict:
 
 
 def get_multiple_stocks(tickers: list[str]) -> dict:
-    """Batch fetch prices for a list of tickers."""
+    """Batch fetch prices for a list of tickers concurrently."""
     results = {}
-    for t in tickers:
-        results[t] = get_stock_price(t)
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        for t, price_data in zip(tickers, executor.map(get_stock_price, tickers)):
+            results[t] = price_data
     return {"results": results, "fetched_at": datetime.utcnow().isoformat()}
 
 
