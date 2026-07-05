@@ -38,7 +38,7 @@ export default function ForecastSection() {
     try {
       const [gold, nifty] = await Promise.all([
         getForecast("gold", p, currency),
-        getForecast("nifty", p),
+        getForecast("nifty", p, "INR"),
       ]);
       setForecasts({ gold, nifty });
       setLastFetched(new Date());
@@ -106,7 +106,7 @@ export default function ForecastSection() {
       <div className="flex items-center justify-between flex-wrap gap-4 border-b border-[#F1F5F9] pb-4">
         <div>
           <SectionHeading title="AI Market Forecast (Prophet)" />
-          <p className="text-xs font-medium text-[#6B7280]">Algorithmic 30-day time-series forecasting</p>
+          <p className="text-xs font-medium text-[#6B7280]">Algorithmic time-series forecasting — gold currency can be switched independently, nifty remains INR only.</p>
         </div>
         
         <div className="flex flex-col items-end gap-1">
@@ -145,21 +145,26 @@ export default function ForecastSection() {
           ))}
         </div>
 
-        {/* Currency Selector */}
-        <div className="flex items-center gap-1 rounded-xl bg-[#F1F5F9] p-1 border border-[#E5E7EB]">
-          {["INR", "USD"].map((curr) => (
-            <button
-              key={curr}
-              onClick={() => handleCurrencyChange(curr)}
-              className={`rounded-lg px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
-                goldCurrency === curr
-                  ? "bg-white text-primary shadow-sm font-extrabold"
-                  : "text-[#6B7280] hover:text-[#111827]"
-              }`}
-            >
-              {curr}
-            </button>
-          ))}
+        {/* Currency Selector (Gold only) */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-1 rounded-xl bg-[#F1F5F9] p-1 border border-[#E5E7EB]">
+            {["INR", "USD"].map((curr) => (
+              <button
+                key={curr}
+                onClick={() => handleCurrencyChange(curr)}
+                className={`rounded-lg px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
+                  goldCurrency === curr
+                    ? "bg-white text-primary shadow-sm font-extrabold"
+                    : "text-[#6B7280] hover:text-[#111827]"
+                }`}
+              >
+                {curr}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-[#6B7280] font-bold font-mono">
+            This USD/INR switch changes only Gold forecasts. Nifty is displayed in INR only.
+          </p>
         </div>
       </div>
 
