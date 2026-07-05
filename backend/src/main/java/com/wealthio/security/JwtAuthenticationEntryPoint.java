@@ -20,6 +20,17 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) throws IOException, ServletException {
 
+        // Ensure CORS headers are present even on 401 responses.
+        // Without these, the browser blocks the response as a CORS error
+        // instead of surfacing the actual 401 to the frontend.
+        String origin = request.getHeader("Origin");
+        if (origin != null) {
+            response.setHeader("Access-Control-Allow-Origin", origin);
+            response.setHeader("Access-Control-Allow-Credentials", "true");
+            response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+            response.setHeader("Access-Control-Allow-Headers", "*");
+        }
+
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 

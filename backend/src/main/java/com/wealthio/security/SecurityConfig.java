@@ -28,7 +28,7 @@ import java.util.ArrayList;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Value("${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174}")
+    @Value("${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,https://wealthio-eight.vercel.app}")
     private String allowedOrigins;
 
     @Autowired

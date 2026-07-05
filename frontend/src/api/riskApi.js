@@ -18,7 +18,7 @@ export async function predictRisk(payload, token) {
     console.error("Risk API error:", error);
     if (!error.response) {
       throw new Error(
-        "Network error or CORS issue while calling the risk service. Verify http://localhost:8001 is reachable and CORS is enabled.",
+        "Network error while calling the risk service. Verify the backend is running and reachable.",
         { cause: error }
       );
     }
@@ -44,7 +44,7 @@ export async function persistSelection(payload, token) {
     console.error("Persist selection error:", error);
     if (!error.response) {
       throw new Error(
-        "Network error or CORS issue while saving selection. Verify http://localhost:8001 is reachable and CORS is enabled.",
+        "Network error while saving selection. Verify the backend is running and reachable.",
         { cause: error }
       );
     }
