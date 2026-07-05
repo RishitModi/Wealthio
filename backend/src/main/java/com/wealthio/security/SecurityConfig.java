@@ -54,6 +54,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         // Allow ML proxy endpoints without token (as they might be used during onboarding)
                         .requestMatchers("/api/ml/**").permitAll()
+                        // Allow live market snapshot without authentication
+                        .requestMatchers("/api/portfolio/market").permitAll()
                         // Allow Swagger UI and OpenAPI spec without token
                         .requestMatchers(
                                 "/swagger-ui.html",

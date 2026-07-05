@@ -84,7 +84,7 @@ export default function ForecastCard({ data }) {
             </span>
           </div>
           <div className="flex flex-col items-center">
-            <span className="text-[9px] font-bold text-[#9CA3AF] uppercase tracking-wider font-mono">30d Forecast</span>
+            <span className="text-[9px] font-bold text-[#9CA3AF] uppercase tracking-wider font-mono">{data.forecastDays}d Forecast</span>
             <span className="text-sm font-extrabold text-[#111827] font-mono mt-0.5">
               {fmtPrice(data.predictedPrice, currency)}
             </span>
@@ -97,7 +97,7 @@ export default function ForecastCard({ data }) {
           </div>
         </div>
         <div className="text-[10px] font-bold text-[#6B7280] font-mono text-center border-t border-[#E5E7EB] pt-2 mt-1">
-          30d Range: {fmtPrice(data.predictedLow, currency)} – {fmtPrice(data.predictedHigh, currency)}
+          {data.forecastDays}d Range: {fmtPrice(data.predictedLow, currency)} – {fmtPrice(data.predictedHigh, currency)}
         </div>
       </div>
 
